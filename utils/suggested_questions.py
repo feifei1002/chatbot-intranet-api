@@ -14,6 +14,7 @@ client = AsyncOpenAI(api_key=TOGETHER_API_KEY,
 # test input
 test_input = """What is a large language model?"""
 
+
 @router.get("/utils/test")
 async def suggestions_test():
     resp = await client.chat.completions.create(

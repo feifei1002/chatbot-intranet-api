@@ -9,6 +9,7 @@ app.add_middleware(
     allow_origins=["*"],
 )
 
+
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
