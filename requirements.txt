@@ -4,3 +4,7 @@ pydantic==2.6.1
 sse-starlette==2.0.0
 langchain==0.1.7
 llama-index==0.10.4
+
+requests~=2.31.0
+bs4~=0.0.2
+beautifulsoup4~=4.12.3
