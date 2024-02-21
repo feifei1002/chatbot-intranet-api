@@ -1,7 +1,12 @@
 from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.document_transformers import Html2TextTransformer
 from langchain.tools import DuckDuckGoSearchResults
+from openai import OpenAI
 import re
+
+from test import TOGETHER_API_KEY
+
+client = OpenAI(api_key=TOGETHER_API_KEY, base_url="https://api.together.xyz/v1")
 
 
 def duckduckgo_search(query):
@@ -23,8 +28,11 @@ def duckduckgo_search(query):
     html2text = Html2TextTransformer()
     data_transformed = html2text.transform_documents(data)
 
+    cleanup_document = []
     # Remove all the new line (\n) to clean up
     for doc in data_transformed:
-        cleanup_data = doc.page_content.replace('\n', '')
+        # cleanup_data = re.compile('\s\s+', doc)
+        cleanup_data = doc.page_content.replace(' \n', '').replace('\r', '')
+        cleanup_document.append(cleanup_data)
         print(cleanup_data)
-        return cleanup_data
+        return client.embeddings.create(input=[cleanup_data], model="togethercomputer/m2-bert-80M-32k-retrieval").data[0].embedding
