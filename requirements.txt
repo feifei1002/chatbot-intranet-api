@@ -2,13 +2,12 @@ fastapi==0.109.2
 httpx==0.26.0
 pydantic==2.6.1
 sse-starlette==2.0.0
-langchain-community==0.0.19
-langchain-core==0.1.23
+
 langchain==0.1.7
 langchain-community==0.0.19
 langchain-core==0.1.23
 langchain-together==0.0.2
-llama-index==0.10.4
+
 llama-index==0.10.6
 
 
@@ -25,5 +24,3 @@ openai===1.12.0
 duckduckgo-search==4.5.0
 playwright==1.41.2
 python-dotenv==1.0.1
-
-selenium~=4.18.1
