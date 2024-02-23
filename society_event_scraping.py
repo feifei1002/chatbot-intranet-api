@@ -16,6 +16,10 @@ while True:
     else:
         print("Society not found or name not available.")
 
-    dt_elements = soup.select("#soc-content")
+    soc_content = soup.select_one("#soc-content")
 
-    print(dt_elements)
+    if soc_content:
+        text_content = soc_content.get_text(separator='\n', strip=True)
+        print("Society Content:", text_content)
+    else:
+        print("Society content not found.")
