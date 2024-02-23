@@ -11,46 +11,61 @@ TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY")
 client = AsyncOpenAI(api_key=TOGETHER_API_KEY,
                      base_url='https://api.together.xyz', )
 
-# specifically set question to start with
-first_question = "What is the breed of the largest cat?"
 
-# data sent to openai
-input_messages = [
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": first_question}
-]
+# function to create a basic conversation, so it can be used for suggestions
+async def placeholder_conversation():
+    # specifically set question for testing,
+    # delete once chatbot conversations are implemented
+    first_question = "What is Cardiff University known for?"
+
+    # current history of the conversation with the chatbot
+    input_messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": first_question}
+    ]
+
+    # test conversation with api,
+    # when working conversation with chatbot functions, replace input_messages with full conversation
+    api_response = await client.chat.completions.create(
+        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        messages=input_messages
+    )
+    # add response to end of conversation history
+    input_messages.append(
+        {"role": "assistant", "content": api_response.choices[0].message.content})
+
+    return input_messages
+
+
+# uses api to suggest 3 questions based on the previous chat history
+async def get_three_questions(suggest, convo_history):
+    # new variable to avoid continuously appending to input_messages
+    previous_messages = convo_history
+    # adds question prompt to ask for suggestions
+    previous_messages.append(
+        {"role": "user", "content": suggest})
+
+    # gets response after asking openapi question
+    resp = await client.chat.completions.create(
+        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        messages=previous_messages
+    )
+    print(resp.choices[0].message.content)
+    return resp.choices[0].message.content
 
 
 # function to ask question to openai and get response
 @router.get("/suggested")
 async def suggested_questions():
-    # test conversation to check the api can review this
-    # conversation and create suggested qs from it
-    await client.chat.completions.create(
-        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-        messages=input_messages
-    )
-
+    # gets history of questions
+    history = await placeholder_conversation()
     # gets 3 suggested questions as json array
-    suggested_qs = await json_suggestions(
-        "In only the format of a JSON array, "
-        "what are 3 good questions to ask after this conversation?"
-        "but do not explain reasoning for each question.")
+    suggested_qs = await get_three_questions(
+        "Based on this conversation history, what are 3 good questions to ask after "
+        "this conversation? But output the 3 questions as 3 elements in JSON format.",
+        history)
     # makes sure file format is correct
     json_suggested_qs = json.dumps(suggested_qs, default=str)
 
-    # sends response to page
+    # sends JSON response of the questions
     return Response(content=json_suggested_qs, media_type='application/json')
-
-
-async def json_suggestions(suggest):
-    # potential issue with continuous appending to list of dictionaries
-    previous_messages = input_messages
-    previous_messages.append(
-        {"role": "user", "content": suggest})
-
-    resp = await client.chat.completions.create(
-        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-        messages=previous_messages
-    )
-    return resp.choices[0].message.content
