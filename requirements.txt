@@ -6,3 +6,5 @@ langchain==0.1.6
 langchain-community==0.0.19
 langchain-core==0.1.23
 llama-index==0.10.4
+ruff==0.2.2
+pytest==8.0.1

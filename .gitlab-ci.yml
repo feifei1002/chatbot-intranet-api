@@ -1,0 +1,22 @@
+image: python:3.11-slim
+
+cache:
+  paths:
+    - /root/.cache/pip
+
+stages:
+  - lint
+  - test
+
+before_script:
+  - pip install -r requirements.txt
+
+lint:
+  stage: lint
+  script:
+    - ruff check .
+
+test:
+  stage: test
+  script:
+    - pytest
