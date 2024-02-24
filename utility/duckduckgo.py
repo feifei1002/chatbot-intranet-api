@@ -19,14 +19,16 @@ client = OpenAI(api_key=TOGETHER_API_KEY, base_url="https://api.together.xyz/v1"
 
 async def duckduckgo_search(query):
     # wrapper = DuckDuckGoSearchAPIWrapper(max_results=5)
-    search = DuckDuckGoSearchResults()
+    search = DuckDuckGoSearchResults(source="site:cardiff.ac.uk")
 
     # This should take in user input later
     result = search.run(query)
+    print(result)
+    r'(https?://[^\s]+)'
 
     # get rid of '[' and ']' to extract the link easier
-    clean_result = result.replace('[', '').replace(']', '')
-    links = re.findall(r'link: (.*?),', clean_result)
+    clean_result = result.replace('[', '').replace('],', '').replace(']', '')
+    links = re.findall(r'(https?://[^\s]+)', clean_result)
     print(links)
     data_transformed_list = []
     # Uses AsyncHtmlLoader to make asynchronous HTTP requests to fetch the data
@@ -38,8 +40,7 @@ async def duckduckgo_search(query):
         html2text = Html2TextTransformer()
         data_transformed = html2text.transform_documents(data)
         print("¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬")
-        print(data_transformed)
-        data_transformed[0].page_content[0:1000].replace(' \n', '').replace('\r', '').encode('utf-8')
+        data_transformed[0].page_content[0:1000].replace(' \n', '').replace('\r', '')
         data_transformed_list.extend(data_transformed)
     vectorstore = FAISS.from_documents(data_transformed_list[:1],
                                        TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval"))
