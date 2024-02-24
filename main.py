@@ -17,6 +17,6 @@ async def root():
 
 
 @app.get("/chatbot-uni")
-async def duckduckgosearch(query: str):
-    search_results = await duckduckgo_search(query)
-    return {"search_results": search_results}
+async def duckduckgosearch(query):
+    response = await duckduckgo_search(query)
+    return {"response": response}
