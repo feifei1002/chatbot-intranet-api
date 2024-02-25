@@ -1,42 +1,70 @@
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
+from pydantic import BaseModel
 
-# Fetch the webpage containing the events
-soc_event_url = "https://www.cardiffstudents.com/activities/societies/events/"
-req = requests.get(soc_event_url)
-soup = BeautifulSoup(req.content, 'html.parser')
 
-# Select all elements with the class "eventlist_day" within the "msl_eventlist" class
-event_days = soup.select(".msl_eventlist .eventlist_day")
+class EventDTO(BaseModel):
+    date: str
+    organisation: str
+    name: str
+    time: str
+    location: str
 
-# Check if there are any event days found
-if event_days:
-    # Iterate through each event day
+
+def scrape_events():
+    soc_event_url = "https://www.cardiffstudents.com/activities/societies/events/"
+    req = requests.get(soc_event_url)
+    soup = BeautifulSoup(req.content, 'html.parser')
+
+    event_days = soup.select(".msl_eventlist .eventlist_day")
+    events_data = []
+
     for day in event_days:
-        # Extract the text of the h4 tag within the event day, representing the date
+        # Extract the date of the event day
         event_day = day.find("h4").get_text(strip=True)
-        # Print the date to indicate the events listed are for this day
-        print("\nEvents on", event_day)
 
-        # Select all event items within the current event day
         events = day.select(".event_item")
-        # Iterate through each event within the current event day
-        for event in events:
-            # Extract the organization name of the event
-            organisation = event.select_one(".msl_event_organisation").get_text(strip=True)
-            # Extract the name of the event
-            event_name = event.select_one(".msl_event_name").get_text(strip=True)
-            # Extract the time of the event
-            event_time = event.select_one(".msl_event_time").get_text(strip=True)
-            # Extract the location of the event
-            event_location = event.select_one(".msl_event_location").get_text(strip=True)
 
-            # Print out the details of the event
-            print("Organization:", organisation)
-            print("Event Name:", event_name)
-            print("Event Time:", event_time)
-            print("Event Location:", event_location)
-            print("-" * 50)  # Separate each event with dashes
-else:
-    # If no event days are found, print a message indicating no events were found
-    print("No events found.")
+        for event_elem in events:
+            organisation = event_elem.select_one(".msl_event_organisation").get_text(strip=True)
+            event_name = event_elem.select_one(".msl_event_name").get_text(strip=True)
+            event_time = event_elem.select_one(".msl_event_time").get_text(strip=True)
+            event_location = event_elem.select_one(".msl_event_location").get_text(strip=True)
+
+            if not organisation:
+                organisation = "Unknown"
+
+            # Create an EventDTO object to store event details
+            event_data = EventDTO(
+                date=event_day,
+                organisation=organisation,
+                name=event_name,
+                time=event_time,
+                location=event_location
+            )
+
+            # Append event data to the list
+            events_data.append(event_data)
+
+    return events_data
+
+
+events_result = scrape_events()
+
+# Group events by date
+events_by_date = {}
+for event in events_result:
+    date = event.date
+    if date not in events_by_date:
+        events_by_date[date] = []
+    events_by_date[date].append(event)
+
+# Print events grouped by date
+for date, events_list in events_by_date.items():
+    print("\nEvents on", date, "\n")
+    for event in events_list:
+        print("Organization:", event.organisation)
+        print("Event Name:", event.name)
+        print("Event Time:", event.time)
+        print("Event Location:", event.location)
+        print("-" * 50)
