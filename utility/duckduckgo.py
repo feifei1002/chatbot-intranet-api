@@ -1,5 +1,4 @@
 import os
-import time
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.document_transformers import Html2TextTransformer
@@ -8,7 +7,7 @@ from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough
 from langchain_together import TogetherEmbeddings
 from langchain_community.llms import Together
 from openai import OpenAI
@@ -16,7 +15,7 @@ import re
 
 TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY")
 client = OpenAI(api_key=TOGETHER_API_KEY, base_url="https://api.together.xyz/v1")
-embedding = TogetherEmbeddings(model= "togethercomputer/m2-bert-80M-8k-retrieval")
+embedding = TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval")
 
 
 async def duckduckgo_search(query):
@@ -31,23 +30,28 @@ async def duckduckgo_search(query):
     clean_result = result.replace('[', '').replace('],', '').replace(']', '')
     links = re.findall(r'(https?://[^\s]+)', clean_result)
     print(links)
-    data_transformed_list = []
     # Uses AsyncHtmlLoader to make asynchronous HTTP requests to fetch the data
     # for link in links:
     loader = AsyncHtmlLoader(links)
     data = loader.load()
 
+    # Create a list to store the transformed data
+    data_transformed_list = []
     # Uses HTML2Text to convert HTML content into plain text
     html2text = Html2TextTransformer()
     data_transformed = html2text.transform_documents(data)
     data_transformed[0].page_content.replace(' \n', '').replace('\r', '')
+    # Add the transformed into the list
     data_transformed_list.extend(data_transformed)
+    # Split the data into chunks to avoid exceeding tokens limit
     text_splitter = CharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=0,
         separator="\n"
     )
     documents = text_splitter.split_documents(data_transformed_list)
+
+    # Use vectorstore to create embedding for each piece of text
     vectorstore = FAISS.from_documents(documents, TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval"))
     retriever = vectorstore.as_retriever()
     model = Together(
@@ -58,8 +62,7 @@ async def duckduckgo_search(query):
     )
 
     # Provide a template following the LLM's original chat template.
-    template = """<s>[INST] Answer the question based only on the search:
-    {context}
+    template = """<s>[INST] Answer the question based on the following {context}
 
     Question: {question} [/INST] 
     """
@@ -71,7 +74,6 @@ async def duckduckgo_search(query):
             | model
             | StrOutputParser()
     )
-
     input_query = query
     output = chain.invoke(input_query)
     print(output)
