@@ -30,6 +30,11 @@ async def duckduckgo_search(query):
     clean_result = result.replace('[', '').replace('],', '').replace(']', '')
     links = re.findall(r'(https?://[^\s]+)', clean_result)
     print(links)
+
+    return links
+
+
+def transform_data(links):
     # Uses AsyncHtmlLoader to make asynchronous HTTP requests to fetch the data
     # for link in links:
     loader = AsyncHtmlLoader(links)
@@ -51,6 +56,12 @@ async def duckduckgo_search(query):
     )
     documents = text_splitter.split_documents(data_transformed_list)
 
+    return documents
+
+
+def process_search_results(query, links):
+
+    documents = transform_data(links)
     # Use vectorstore to create embedding for each piece of text
     vectorstore = FAISS.from_documents(documents, TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval"))
     retriever = vectorstore.as_retriever()
