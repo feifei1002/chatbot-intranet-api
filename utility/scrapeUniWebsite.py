@@ -45,7 +45,7 @@ def transform_data(links):
     # Uses HTML2Text to convert HTML content into plain text
     html2text = Html2TextTransformer()
     data_transformed = html2text.transform_documents(data)
-    data_transformed[0].page_content.replace(' \n', '').replace('\r', '')
+    data_transformed[0].page_content = data_transformed[0].page_content.replace(' \n', '').replace('\r', '')
     # Add the transformed into the list
     data_transformed_list.extend(data_transformed)
     # Split the data into chunks to avoid exceeding tokens limit
