@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from utility.duckduckgo import duckduckgo_search, transform_data, process_search_results
+from utility.scrapeUniWebsite import duckduckgo_search, transform_data, process_search_results
 
 app = FastAPI()
 
@@ -17,7 +17,7 @@ async def root():
 
 
 @app.get("/chatbot-uni")
-async def duckduckgosearch(query):
+async def scrape_uni_website(query):
     search_links = await duckduckgo_search(query)
     transformed_data = transform_data(search_links)
     response = process_search_results(query, search_links)
