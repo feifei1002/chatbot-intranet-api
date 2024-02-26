@@ -19,7 +19,7 @@ embedding = TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval"
 
 
 async def duckduckgo_search(query):
-    wrapper = DuckDuckGoSearchAPIWrapper(max_results=4, region="uk-en")
+    wrapper = DuckDuckGoSearchAPIWrapper(max_results=1, region="uk-en")
     search = DuckDuckGoSearchResults(api_wrapper=wrapper, query=query)
 
     # This should take in user input later
