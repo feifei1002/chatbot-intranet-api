@@ -2,7 +2,7 @@ import pytest
 import os
 from openai import OpenAI
 from unittest.mock import patch, Mock
-from utility.scrapeUniWebsite import duckduckgo_search, transform_data
+from utility.scrapeUniWebsite import duckduckgo_search
 
 TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY")
 client = OpenAI(api_key=TOGETHER_API_KEY, base_url="https://api.together.xyz/v1")
@@ -17,7 +17,8 @@ async def test_duckduckgo_search():
 
     # Set up patching for DuckDuckGoSearchAPIWrapper and DuckDuckGoSearchResults
     with patch('utility.scrapeUniWebsite.DuckDuckGoSearchAPIWrapper'):
-        with patch('utility.scrapeUniWebsite.DuckDuckGoSearchResults', return_value=mock_results):
+        with patch('utility.scrapeUniWebsite.DuckDuckGoSearchResults',
+                   return_value=mock_results):
             # Set up the expected values
             query = "What are the tuition for study computer science at Cardiff University?"
             expected_result = ["https://www.cardiff.ac.uk/documents/2583013-fees-and-access-plan-2022-23"]

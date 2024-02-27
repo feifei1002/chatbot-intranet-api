@@ -45,7 +45,8 @@ def transform_data(links):
     # Uses HTML2Text to convert HTML content into plain text
     html2text = Html2TextTransformer()
     data_transformed = html2text.transform_documents(data)
-    data_transformed[0].page_content = data_transformed[0].page_content.replace(' \n', '').replace('\r', '')
+    data_transformed[0].page_content = (
+        data_transformed[0].page_content.replace(' \n', '').replace('\r', ''))
     # Add the transformed into the list
     data_transformed_list.extend(data_transformed)
     # Split the data into chunks to avoid exceeding tokens limit
@@ -63,7 +64,8 @@ def process_search_results(query, links):
 
     documents = transform_data(links)
     # Use vectorstore to create embedding for each piece of text
-    vectorstore = FAISS.from_documents(documents, TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval"))
+    vectorstore = FAISS.from_documents(documents,
+                                       TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval"))
     retriever = vectorstore.as_retriever()
     model = Together(
         model="mistralai/Mixtral-8x7B-Instruct-v0.1",
@@ -75,7 +77,7 @@ def process_search_results(query, links):
     # Provide a template following the LLM's original chat template.
     template = """<s>[INST] Answer the question based on the following {context}
 
-    Question: {question} [/INST] 
+    Question: {question} [/INST]
     """
     prompt = ChatPromptTemplate.from_template(template)
 
