@@ -20,7 +20,8 @@ async def test_duckduckgo_search():
         with patch('utility.scrapeUniWebsite.DuckDuckGoSearchResults',
                    return_value=mock_results):
             # Set up the expected values
-            query = "What are the tuition for study computer science at Cardiff University?"
+            query = ("What are the tuition for study "
+                     "computer science at Cardiff University?")
             expected_result = ["https://www.cardiff.ac.uk/documents/2583013-fees-and-access-plan-2022-23"]
 
             # Mock the run method of DuckDuckGoSearchResults
