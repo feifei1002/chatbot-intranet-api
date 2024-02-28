@@ -3,6 +3,7 @@ image: python:3.11-slim
 cache:
   paths:
     - /root/.cache/pip
+    - /var/cache/apt/
 
 stages:
   - lint
