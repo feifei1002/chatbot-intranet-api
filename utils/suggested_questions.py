@@ -2,7 +2,6 @@ import os
 
 from fastapi import APIRouter, Response
 from openai import AsyncOpenAI
-import json
 
 router = APIRouter()
 
@@ -27,18 +26,15 @@ async def placeholder_conversation():
     # test conversation with api,
     # when working conversation with chatbot functions,
     # replace input_messages with full conversation
-    try:
-        api_response = await client.chat.completions.create(
-            model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-            messages=input_messages
-        )
-        # add response to end of conversation history
-        input_messages.append(
-            {"role": "assistant", "content":
-                str(api_response.choices[0].message.content)})
-    except Exception:
-        # when failure to get conversation response
-        print("Error getting response from api: ", Exception)
+    api_response = await client.chat.completions.create(
+        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        messages=input_messages
+    )
+
+    # add response to end of conversation history
+    input_messages.append(
+        {"role": "assistant", "content":
+            str(api_response.choices[0].message.content)})
 
     return input_messages
 
@@ -48,43 +44,37 @@ async def get_three_questions(suggest, convo_history):
     # new variable to avoid continuously appending to input_messages
     previous_messages = convo_history
 
-    try:
-        # adds question prompt to ask for suggestions
-        previous_messages.append(
-            {"role": "user", "content": str(suggest)})
+    # adds question prompt to ask for suggestions
+    previous_messages.append(
+        {"role": "user", "content": str(suggest)})
 
-        # gets response after asking openapi question
-        resp = await client.chat.completions.create(
-            model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-            messages=previous_messages
-        )
+    # gets response after asking openapi question
+    resp = await client.chat.completions.create(
+        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        messages=previous_messages,
+        response_format={
+            "type": "json_object"
+        }
+    )
 
-        # only return response from api if succeeds
-        return str(resp.choices[0].message.content)
-    except Exception:
-        # when failure to get conversation response
-        print("Error getting response from api: ", Exception)
+    # return response from api
+    return str(resp.choices[0].message.content)
 
 
 # function to ask question to openai and get response
 @router.get("/suggested")
 async def suggested_questions():
-    try:
-        # gets history of questions
-        history = await placeholder_conversation()
-        # gets 3 suggested questions as json array
-        suggested_qs = await get_three_questions(
-            "Based on this conversation history, "
-            "what are 3 good questions to ask after this conversation? "
-            "But output the 3 questions as 3 elements in JSON format.",
-            history)
-        # makes sure file format is correct
-        json_suggested_qs = json.dumps(suggested_qs, default=str)
+    # gets history of questions
+    history = await placeholder_conversation()
 
-        # sends JSON response of the questions
-        return Response(content=json_suggested_qs, media_type='application/json')
-    except Exception:
-        # when error with getting suggested questions
-        print("Error getting suggested questions: ", Exception)
-        # returns error code 500 because likely server side error
-        return Response("Internal server error", status_code=500)
+    # gets 3 suggested questions as json array
+    suggested_qs = await get_three_questions(
+        "Based on this conversation history, "
+        "what are 3 good questions to ask after this conversation? "
+        "Make sure to format in a JSON object with an array in the key 'questions'.",
+        history)
+
+    print(suggested_qs)
+
+    # sends JSON response of the questions
+    return Response(content=suggested_qs, media_type='application/json')
