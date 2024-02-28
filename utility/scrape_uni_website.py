@@ -18,8 +18,10 @@ embedding = TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval"
 
 async def duckduckgo_search(query):
 
-    # Take in the user's query
+    # Take in the user's query using Async DuckDuckGoSearch (DDGS)
     async with AsyncDDGS() as addgs:
+        # using max_results = 10 to get only the 10 most relevant data
+        # and to prevent fetching too much data
         results = [r async for r in addgs.text(query, region='uk-en', safesearch='off',
                                                timelimit='n', max_results=10)]
 
