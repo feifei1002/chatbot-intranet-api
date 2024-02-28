@@ -1,5 +1,8 @@
 image: python:3.11-slim
 
+variables:
+  TOGETHER_API_KEY: $TOGETHER_API_KEY
+
 cache:
   paths:
     - /root/.cache/pip
