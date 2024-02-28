@@ -21,6 +21,6 @@ async def root():
 @app.get("/chatbot-uni")
 async def scrape_uni_website(query):
     search_links = await duckduckgo_search(query)
-    transform_data(search_links)
-    response = process_search_results(query, search_links)
+    await transform_data(search_links)
+    response = await process_search_results(query, search_links)
     return {"response": response}
