@@ -1,4 +1,5 @@
 import os
+import qdrant_client
 from duckduckgo_search import AsyncDDGS
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import AsyncHtmlLoader
@@ -9,15 +10,31 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_together import TogetherEmbeddings
 from langchain_community.llms import Together
+from llama_index.core.ingestion import IngestionPipeline
 from openai import OpenAI
+from llama_index.vector_stores.qdrant import QdrantVectorStore
+from llama_index.embeddings.together import TogetherEmbedding
+from llama_index.core import VectorStoreIndex, ServiceContext
+from llama_index.core import Document
+from llama_index.llms.together import TogetherLLM
 
 TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY")
+QDRANT_API_KEY = os.environ.get("QDRANT__SERVICE__API_KEY")
 client = OpenAI(api_key=TOGETHER_API_KEY, base_url="https://api.together.xyz/v1")
-embedding = TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval")
+embed_model = TogetherEmbedding(
+    model_name="togethercomputer/m2-bert-80M-8k-retrieval", api_key=TOGETHER_API_KEY
+)
+
+qdrant_client = (qdrant_client.QdrantClient
+                 ("https://d4494ecb-d808-495b-9991-030c3e18b12f.europe-west3-0.gcp.cloud.qdrant.io",
+                  api_key=QDRANT_API_KEY))
+vector_store = QdrantVectorStore(client=qdrant_client, collection_name="uni_web_documents")
+llm = TogetherLLM(
+    model="mistralai/Mixtral-8x7B-Instruct-v0.1", api_key=TOGETHER_API_KEY
+)
 
 
 async def duckduckgo_search(query):
-
     # Take in the user's query using Async DuckDuckGoSearch (DDGS)
     async with AsyncDDGS() as addgs:
         # using max_results = 10 to get only the 10 most relevant data
@@ -61,12 +78,27 @@ async def transform_data(links):
 async def process_search_results(query, links):
     documents = await transform_data(links)
     # Use vectorstore to create embedding for each piece of text
+    pipeline = IngestionPipeline(
+        transformations=[
+            embed_model,
+        ],
+        vector_store=vector_store,
+    )
+    pipeline.run(documents=[Document.example()])
+    service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model)
+
+    index = VectorStoreIndex.from_vector_store(vector_store, service_context=service_context)
+
+    response = llm.complete(query)
+    # This uses TogetherAI LLM
+    print(response)
+
     vectorstore = FAISS.from_documents(documents,
                                        TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval"))
     retriever = vectorstore.as_retriever()
     model = Together(
         model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-        temperature=0.7,
+        temperature=0.0,
         max_tokens=1024,
         top_k=50,
     )
@@ -86,6 +118,9 @@ async def process_search_results(query, links):
     )
     input_query = query
     output = chain.invoke(input_query)
+
+    # This uses TogetherAI model
     print(output)
 
+    # Return value can be change later depends on which one we pass to the chat endpoint
     return output

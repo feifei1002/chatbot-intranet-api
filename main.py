@@ -18,8 +18,8 @@ async def root():
     return {"message": "Hello World"}
 
 
+@app.get("/chatbot-uni")
 async def scrape_uni_website(query):
-
     # get the links for relevant data based on the user's query
     search_links = await duckduckgo_search(query)
     # Transform the data into readable texts
