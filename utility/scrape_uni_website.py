@@ -28,7 +28,8 @@ embed_model = TogetherEmbedding(
 qdrant_client = (qdrant_client.QdrantClient
                  ("https://d4494ecb-d808-495b-9991-030c3e18b12f.europe-west3-0.gcp.cloud.qdrant.io",
                   api_key=QDRANT_API_KEY))
-vector_store = QdrantVectorStore(client=qdrant_client, collection_name="uni_web_documents")
+vector_store = QdrantVectorStore(client=qdrant_client,
+                                 collection_name="uni_web_documents")
 llm = TogetherLLM(
     model="mistralai/Mixtral-8x7B-Instruct-v0.1", api_key=TOGETHER_API_KEY
 )
@@ -85,9 +86,11 @@ async def process_search_results(query, links):
         vector_store=vector_store,
     )
     pipeline.run(documents=[Document.example()])
-    service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model)
+    service_context = ServiceContext.from_defaults(llm=llm,
+                                                   embed_model=embed_model)
 
-    index = VectorStoreIndex.from_vector_store(vector_store, service_context=service_context)
+    VectorStoreIndex.from_vector_store(vector_store,
+                                       service_context=service_context)
 
     response = llm.complete(query)
     # This uses TogetherAI LLM
