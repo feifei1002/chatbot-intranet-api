@@ -20,14 +20,13 @@ from llama_index.llms.together import TogetherLLM
 
 TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY")
 QDRANT_API_KEY = os.environ.get("QDRANT__SERVICE__API_KEY")
+QDRANT_URL = os.environ.get("QDRANT_URL")
 client = OpenAI(api_key=TOGETHER_API_KEY, base_url="https://api.together.xyz/v1")
 embed_model = TogetherEmbedding(
     model_name="togethercomputer/m2-bert-80M-8k-retrieval", api_key=TOGETHER_API_KEY
 )
 
-qdrant_client = (qdrant_client.QdrantClient
-                 ("https://d4494ecb-d808-495b-9991-030c3e18b12f.europe-west3-0.gcp.cloud.qdrant.io",
-                  api_key=QDRANT_API_KEY))
+qdrant_client = (qdrant_client.QdrantClient(QDRANT_URL, api_key=QDRANT_API_KEY))
 vector_store = QdrantVectorStore(client=qdrant_client,
                                  collection_name="uni_web_documents")
 llm = TogetherLLM(
