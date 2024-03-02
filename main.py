@@ -27,3 +27,9 @@ async def scrape_uni_website(query):
     # Process the data to generate response based on user's query
     response = await process_search_results(query, search_links)
     return {"response": response}
+
+
+@app.get("/db")
+async def postgre_database(db: Session = Depends(get_db)):
+    # Use the database session
+    pass
