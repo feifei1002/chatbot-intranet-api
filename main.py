@@ -5,12 +5,17 @@ from utility.scrape_uni_website import (duckduckgo_search,
                                         transform_data,
                                         process_search_results)
 
+from routes import authentication
+
+
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
 )
+
+app.include_router(authentication.router)
 
 
 @app.get("/")
