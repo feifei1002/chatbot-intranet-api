@@ -29,8 +29,13 @@ def scrape_links():
 def scrape_content(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
-    title = soup.title.string
-    print("Title:", title)
+
+    soc_content = soup.select_one("#soc-content")
+    if soc_content:
+        text_content = soc_content.get_text(separator='\n', strip=True)
+    else:
+        text_content = "Society content not found."
+    print(text_content)
 
 
 # Call the function to get the links
