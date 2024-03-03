@@ -11,11 +11,17 @@ router = APIRouter()
 
 
 class ConversationMessage(BaseModel):
+    """
+    A message in a conversation
+    """
     role: str
     content: str
 
 
 class ChatRequest(BaseModel):
+    """
+    A request to the chat endpoint
+    """
     previous_messages: list[ConversationMessage]
     question: str
 
@@ -40,23 +46,28 @@ async def chat(chat_request: ChatRequest):
         }
     ]
 
+    # Check if the role for each message is allowed
+    # this is to prevent the user from impersonating the system role function role, etc.
     for message in chat_request.previous_messages:
         if message.role not in __allowed_roles:
             raise ValueError(f"Role {message.role} is not allowed")
 
         messages.append(message.model_dump())
 
+    # Add the user's question to the messages
     messages.append({
         "role": "user",
         "content": chat_request.question
     })
 
+    # Create a chat completion request
     response = await client.chat.completions.create(
         messages=messages,
         model="mistralai/Mixtral-8x7B-Instruct-v0.1",
         stream=True
     )
 
+    # Create an event generator to stream the response from OpenAI's format
     async def event_generator():
         async for event in response:
             choice = event.choices[0]
