@@ -19,7 +19,7 @@ from llama_index.core import VectorStoreIndex
 from llama_index.core.base.embeddings.base import Embedding, BaseEmbedding
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.together import TogetherEmbedding
+
 
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 
@@ -192,24 +192,32 @@ async def scrape_events(soc_event_url):
 
 
 async def main():
+    # Scrape events data
     events_result = await scrape_events("https://www.cardiffstudents.com/activities/societies/events/")
-    documents = []
 
+    # Create Document objects for each event
+    documents = []
     for event in events_result:
+        # Create Document with text and metadata
         doc = Document(text=event.organisation,
                        metadata={"date": event.date,
                                  "description": event.description,
                                  "name": event.name, "time": event.time,
                                  "location": event.location})
         documents.append(doc)
+
+        # Print content with metadata for each document
         print(doc.get_content(metadata_mode=MetadataMode.EMBED))
 
+    # Save documents to a file
     pickle.dump(documents, open("events.pkl", "wb"))
 
+    # Initialise embedding model
     embed_model = OpenAIEmbedding(model="text-embedding-3-large")
     splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
+    # Create Qdrant clients
     client = QdrantClient(
         url=os.environ.get("QDRANT_URL"),
         api_key=os.environ.get("QDRANT_API_KEY")
@@ -219,21 +227,36 @@ async def main():
         api_key=os.environ.get("QDRANT_API_KEY")
     )
 
+    # Create Qdrant vector store
     store = QdrantVectorStore("events", client=client, aclient=aclient)
+
+    # Define ingestion pipeline
     pipeline = IngestionPipeline(
         transformations=[splitter, embed_model],
         vector_store=store
     )
 
+    # Ingest documents into Qdrant
     await pipeline.arun(show_progress=True, documents=documents)
 
+    # Create index from vector store
     index = VectorStoreIndex.from_vector_store(vector_store=store, embed_model=embed_model, use_async=True)
 
+    # Create retriever from index
     retriever = index.as_retriever()
 
+    # Perform retrieval query
     result = await retriever.aretrieve("what gaming events are there?")
 
+    # Print retrieval result
     print(result)
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    nest_asyncio.apply()
+    asyncio.run(main())
+
 
 
 if __name__ == "__main__":
