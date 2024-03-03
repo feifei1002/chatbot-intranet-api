@@ -33,6 +33,7 @@ class EventDTO(BaseModel):
     name: str
     time: str
     location: str
+    description: str
 
 
 class CustomTogetherEmbedding(BaseEmbedding):
@@ -169,16 +170,21 @@ async def scrape_events(soc_event_url):
             event_name = event_elem.select_one(".msl_event_name").get_text(strip=True)
             event_time = event_elem.select_one(".msl_event_time").get_text(strip=True)
             event_location = event_elem.select_one(".msl_event_location").get_text(strip=True)
+            event_description = event_elem.select_one("msl_event_description").get_text(strip=True)
 
             if not organisation:
-                organisation = "Unknown"
+                organisation = "Organisation name not found."
+
+            if not event_description:
+                event_description = "Event description not found."
 
             event_data = EventDTO(
                 date=event_day,
                 organisation=organisation,
                 name=event_name,
                 time=event_time,
-                location=event_location
+                location=event_location,
+                description=event_description
             )
             events_data.append(event_data)
 
@@ -192,6 +198,7 @@ async def main():
     for event in events_result:
         doc = Document(text=event.organisation,
                        metadata={"date": event.date,
+                                 "description": event.description,
                                  "name": event.name, "time": event.time,
                                  "location": event.location})
         documents.append(doc)
