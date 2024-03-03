@@ -45,6 +45,11 @@ async def chat(chat_request: ChatRequest):
 
         messages.append(message.model_dump())
 
+    messages.append({
+        "role": "user",
+        "content": chat_request.question
+    })
+
     response = await client.chat.completions.create(
         messages=messages,
         model="mistralai/Mixtral-8x7B-Instruct-v0.1",
