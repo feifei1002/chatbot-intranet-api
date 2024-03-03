@@ -18,7 +18,6 @@ from pydantic import BaseModel  # Base class for creating Pydantic models
 from qdrant_client import QdrantClient, AsyncQdrantClient  # Qdrant client for interacting with Qdrant
 from utils.custom_together_embed import CustomTogetherEmbedding
 
-
 class EventDTO(BaseModel):
     date: str
     organisation: str
@@ -80,11 +79,8 @@ async def scrape_events(soc_event_url):
 async def main():
     # Scrape events data
     events_result = await scrape_events("https://www.cardiffstudents.com/activities/societies/events/")
-
-    # Create Document objects for each event
     documents = []
     for event in events_result:
-        # Create Document with text and metadata
         doc = Document(text=event.organisation,
                        metadata={"date": event.date,
                                  "description": event.description,
