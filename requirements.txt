@@ -5,6 +5,9 @@ sse-starlette==2.0.0
 langchain==0.1.6
 langchain-community==0.0.19
 langchain-core==0.1.23
+langchain-together==0.0.2
 llama-index==0.10.4
 ruff==0.2.2
 pytest==8.0.1
+openai===1.12.0
+duckduckgo-search==4.5.0
