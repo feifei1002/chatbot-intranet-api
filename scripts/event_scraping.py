@@ -1,29 +1,29 @@
-import nest_asyncio
-import os
-import pickle
-import asyncio
+# Import necessary modules
+import nest_asyncio  # Module to enable nested asyncio event loops
+import os  # Module for operating system related functionalities
+import pickle  # Module for serializing and deserializing Python objects
+import asyncio  # Module for writing asynchronous code
 
-from bs4 import BeautifulSoup
-from llama_index.core.schema import MetadataMode
-from llama_index.embeddings.openai import OpenAIEmbedding
-from pydantic import BaseModel
+from bs4 import BeautifulSoup  # Module for web scraping
+from llama_index.core.schema import MetadataMode  # Metadata mode enum from llama_index
+from llama_index.embeddings.openai import OpenAIEmbedding  # OpenAI embedding model
+from pydantic import BaseModel  # Base class for creating Pydantic models
 
-from llama_index.core import Document
+from llama_index.core import Document  # Document class from llama_index
 
-from typing import List, Optional, Any
+from typing import List, Optional, Any  # Typing module for type hints
 
-import httpx
-from dotenv import load_dotenv
+import httpx  # Async HTTP client library
+from dotenv import load_dotenv  # Module to load environment variables from .env file
 
-from llama_index.core import VectorStoreIndex
-from llama_index.core.base.embeddings.base import Embedding, BaseEmbedding
-from llama_index.core.ingestion import IngestionPipeline
-from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core import VectorStoreIndex  # Vector store index from llama_index
+from llama_index.core.base.embeddings.base import Embedding, BaseEmbedding  # Base classes for embeddings
+from llama_index.core.ingestion import IngestionPipeline  # Ingestion pipeline for document processing
+from llama_index.core.node_parser import SentenceSplitter  # Sentence splitter for chunking text
 
-from llama_index.vector_stores.qdrant import QdrantVectorStore
-
-from pydantic import Field
-from qdrant_client import QdrantClient, AsyncQdrantClient
+from llama_index.vector_stores.qdrant import QdrantVectorStore  # Vector store for Qdrant
+from pydantic import Field  # Field class from Pydantic for model fields
+from qdrant_client import QdrantClient, AsyncQdrantClient  # Qdrant client for interacting with Qdrant
 
 
 class EventDTO(BaseModel):
@@ -249,7 +249,7 @@ async def main():
     await pipeline.arun(show_progress=True, documents=documents)
 
     # Create index from vector store
-    index = VectorStoreIndex.from_vector_store(vector_store=store, embed_model=embed_model, use_async=True)
+    index = VectorStoreIndex.from_vector_store( vector_store=store, embed_model=embed_model, use_async=True)
 
     # Create retriever from index
     retriever = index.as_retriever()
