@@ -170,7 +170,7 @@ async def scrape_events(soc_event_url):
             event_name = event_elem.select_one(".msl_event_name").get_text(strip=True)
             event_time = event_elem.select_one(".msl_event_time").get_text(strip=True)
             event_location = event_elem.select_one(".msl_event_location").get_text(strip=True)
-            event_description = event_elem.select_one("msl_event_description").get_text(strip=True)
+            event_description = event_elem.select_one(".msl_event_description").get_text(strip=True)
 
             if not organisation:
                 organisation = "Organisation name not found."
