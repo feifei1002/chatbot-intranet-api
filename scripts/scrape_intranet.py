@@ -11,40 +11,16 @@ from llama_index.core import VectorStoreIndex
 from llama_index.core.base.embeddings.base import Embedding, BaseEmbedding
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.together import TogetherEmbedding
 from llama_index.readers.web import WholeSiteReader
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from playwright.async_api import async_playwright
 from pydantic import Field
 from qdrant_client import QdrantClient, AsyncQdrantClient
 from selenium import webdriver
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
-
-async def login_browser() -> dict[str, str]:
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
-        context = await browser.new_context()
-        page = await context.new_page()
-        await page.goto("https://intranet.cardiff.ac.uk/students")
-
-        async with page.expect_request("https://intranet.cardiff.ac.uk/_saml/saml-account-manager") as _:
-            pass
-
-        async with page.expect_navigation(url="https://intranet.cardiff.ac.uk/students", timeout=120_000) as _:
-            print("Please login with your university credentials within 2 minutes")
-
-        cookies = await context.cookies()
-
-        # Find cookie with name "SQ_SYSTEM_SESSION"
-        for cookie in cookies:
-            name = cookie["name"]
-            if name == "SQ_SYSTEM_SESSION":
-                return {name: cookie["value"]}
-
-        raise Exception("Cookie not found")
 
 
 class CustomTogetherEmbedding(BaseEmbedding):
@@ -54,7 +30,7 @@ class CustomTogetherEmbedding(BaseEmbedding):
     )
     api_key: str = Field(
         default="",
-        description="The API key for the Together API. If not set, will attempt to use the TOGETHER_API_KEY environment variable.", # noqa
+        description="The API key for the Together API. If not set, will attempt to use the TOGETHER_API_KEY environment variable." # noqa
     )
 
     def __init__(
@@ -81,7 +57,7 @@ class CustomTogetherEmbedding(BaseEmbedding):
 
         Returns:
             embeddings: a list of float numbers. Embeddings correspond to your given text.
-        """
+        """ # noqa
         headers = {
             "accept": "application/json",
             "content-type": "application/json",
@@ -95,7 +71,7 @@ class CustomTogetherEmbedding(BaseEmbedding):
         )
         if response.status_code != 200:
             raise ValueError(
-                f"Request failed with status code {response.status_code}: {response.text}"
+                f"Request failed with status code {response.status_code}: {response.text}" # noqa
             )
 
         return response.json()["data"][0]["embedding"]
@@ -109,7 +85,7 @@ class CustomTogetherEmbedding(BaseEmbedding):
 
         Returns:
             embeddings: a list of float numbers. Embeddings correspond to your given text.
-        """
+        """ # noqa
         headers = {
             "accept": "application/json",
             "content-type": "application/json",
@@ -126,7 +102,7 @@ class CustomTogetherEmbedding(BaseEmbedding):
             )
             if response.status_code != 200:
                 raise ValueError(
-                    f"Request failed with status code {response.status_code}: {response.text}"
+                    f"Request failed with status code {response.status_code}: {response.text}" # noqa
                 )
 
             return response.json()["data"][0]["embedding"]
@@ -154,7 +130,7 @@ class CustomTogetherEmbedding(BaseEmbedding):
         )
         if response.status_code != 200:
             raise ValueError(
-                f"Request failed with status code {response.status_code}: {response.text}"
+                f"Request failed with status code {response.status_code}: {response.text}" # noqa
             )
 
         return [embedding["embedding"] for embedding in response.json()["data"]]
@@ -185,7 +161,7 @@ class CustomTogetherEmbedding(BaseEmbedding):
             )
             if response.status_code != 200:
                 raise ValueError(
-                    f"Request failed with status code {response.status_code}: {response.text}"
+                    f"Request failed with status code {response.status_code}: {response.text}" # noqa
                 )
 
             return [embedding["embedding"] for embedding in response.json()["data"]]
@@ -193,7 +169,7 @@ class CustomTogetherEmbedding(BaseEmbedding):
 
 class CustomWholeSiteReader(WholeSiteReader):
     # upstream def: def __init__(self, prefix: str, max_depth: int = 10) -> None
-    def __init__(self, prefix: str, cookies: dict[str, str], max_depth: int = 10) -> None:
+    def __init__(self, prefix: str, cookies: dict[str, str], max_depth: int = 10) -> None: # noqa
         self.cookies = cookies
         self.all_urls = set()
         self.cache = {}
@@ -207,7 +183,7 @@ class CustomWholeSiteReader(WholeSiteReader):
 
         Returns:
             WebDriver: An instance of Chrome WebDriver.
-        """
+        """ # noqa
         try:
             import chromedriver_autoinstaller
         except ImportError:
@@ -223,11 +199,20 @@ class CustomWholeSiteReader(WholeSiteReader):
 
         # Add cookies to the driver
         for name, value in self.cookies.items():
-            driver.add_cookie({"name": name, "value": value, "domain": ".cardiff.ac.uk"})
+            driver.add_cookie({
+                "name": name,
+                "value": value,
+                "domain": ".cardiff.ac.uk"
+            })
 
         return driver
 
     def cache_path(self, url):
+        """
+        Find the path of a URL, and cache it.
+        :param url: the URL to find the path of
+        :return: the path of the URL
+        """
 
         key = sha256(url.encode()).hexdigest()
 
@@ -247,7 +232,8 @@ class CustomWholeSiteReader(WholeSiteReader):
     def extract_links(self):
         links = super().extract_links()
 
-        # Hacky logic to remove the link if the same path has been added 10 times already
+        # Hacky logic to remove the link
+        # if the same path has been added 10 times already
         # This is done since we had too many search result pages being added
 
         to_remove = []
@@ -289,26 +275,68 @@ class CustomWholeSiteReader(WholeSiteReader):
         try:
             main_content = self.driver.find_element(By.CSS_SELECTOR, "main.content")
             return main_content.text.strip()
-        except:
+        except NoSuchElementException:
             pass
 
         body_element = self.driver.find_element(By.TAG_NAME, "body")
         return body_element.text.strip()
 
 
+async def login_browser() -> dict[str, str]:
+    """
+    Logs into the Cardiff University intranet and returns the cookies
+    :return: A dictionary of cookies
+    """
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=False)
+        context = await browser.new_context()
+        page = await context.new_page()
+        await page.goto("https://intranet.cardiff.ac.uk/students")
+
+        # Wait for the intermediate page to load
+        async with page.expect_request(
+                "https://intranet.cardiff.ac.uk/_saml/saml-account-manager"
+        ) as _:
+            pass
+
+        # Expect the user to login within 2 minutes
+        async with page.expect_navigation(
+                url="https://intranet.cardiff.ac.uk/students",
+                timeout=120_000
+        ) as _:
+            print("Please login with your university credentials within 2 minutes")
+
+        cookies = await context.cookies()
+
+        # Find cookie with name "SQ_SYSTEM_SESSION"
+        for cookie in cookies:
+            name = cookie["name"]
+            if name == "SQ_SYSTEM_SESSION":
+                return {name: cookie["value"]}
+
+        raise Exception("Cookie not found")
+
+
 async def main():
     cookies = await login_browser()
 
-    reader = CustomWholeSiteReader("https://intranet.cardiff.ac.uk/students/", cookies, max_depth=10)
+    reader = CustomWholeSiteReader(
+        "https://intranet.cardiff.ac.uk/students/",
+        cookies,
+        max_depth=10
+    )
 
-    # Scrape the intranet
+    # Scrape the intranet recursively
     documents = reader.load_data("https://intranet.cardiff.ac.uk/students")
 
+    # Dump the documents, in case the script fails later
     pickle.dump(documents, open("intranet.pkl", "wb"))
     # documents = pickle.load(open("intranet.pkl", "rb"))
 
     # TODO: Created issue upstream for proper batching: https://github.com/run-llama/llama_index/issues/11086
-    embed_model = CustomTogetherEmbedding(model_name="togethercomputer/m2-bert-80M-2k-retrieval")
+    embed_model = CustomTogetherEmbedding(
+        model_name="togethercomputer/m2-bert-80M-2k-retrieval"
+    )
     # splitter = SemanticSplitterNodeParser(
     #     buffer_size=1, breakpoint_percentile_threshold=95, embed_model=embed_model
     # )
@@ -327,6 +355,11 @@ async def main():
 
     store = QdrantVectorStore("intranet", client=client, aclient=aclient)
 
+    # Create an ingestion pipeline to process the documents
+    # First, we split the documents by sentences
+    # Then, we embed the sentences using the Together API
+    # Finally, we store the embeddings in a vector store
+    # The vector store uses Qdrant, a vector database, to store the embeddings
     pipeline = IngestionPipeline(
         transformations=[
             splitter,
@@ -338,11 +371,18 @@ async def main():
     await pipeline.arun(show_progress=True, documents=documents)
     # pipeline.run(show_progress=True, documents=documents)
 
-    index = VectorStoreIndex.from_vector_store(vector_store=store, embed_model=embed_model, use_async=True)
+    index = VectorStoreIndex.from_vector_store(
+        vector_store=store,
+        embed_model=embed_model,
+        use_async=True
+    )
 
     retriever = index.as_retriever()
 
-    result = await retriever.aretrieve("Are there any grants available for postgraduate studies?")
+    # Test the retriever
+    result = await retriever.aretrieve(
+        "Are there any grants available for postgraduate studies?"
+    )
 
     print(result)
 
