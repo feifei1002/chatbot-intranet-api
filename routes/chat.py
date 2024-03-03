@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import date
 
@@ -62,8 +63,8 @@ async def chat(chat_request: ChatRequest):
             delta = choice.delta
             content = delta.content
             if content is not None:
-                yield {
-                    "text": delta.content
-                }
+                yield json.dumps({
+                      "text": delta.content
+                })
 
     return EventSourceResponse(event_generator())
