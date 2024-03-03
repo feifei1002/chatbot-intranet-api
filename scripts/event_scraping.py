@@ -4,6 +4,8 @@ import pickle
 import asyncio
 
 from bs4 import BeautifulSoup
+from llama_index.core.schema import MetadataMode
+from llama_index.embeddings.openai import OpenAIEmbedding
 from pydantic import BaseModel
 
 from llama_index.core import Document
@@ -193,10 +195,11 @@ async def main():
                                  "name": event.name, "time": event.time,
                                  "location": event.location})
         documents.append(doc)
+        print(doc.get_content(metadata_mode=MetadataMode.EMBED))
 
     pickle.dump(documents, open("events.pkl", "wb"))
 
-    embed_model = TogetherEmbedding(model_name="togethercomputer/m2-bert-80M-2k-retrieval")
+    embed_model = OpenAIEmbedding(model="text-embedding-3-large")
     splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
@@ -221,7 +224,7 @@ async def main():
 
     retriever = index.as_retriever()
 
-    result = await retriever.aretrieve("What events are on Thu 2nd March?")
+    result = await retriever.aretrieve("what gaming events are there?")
 
     print(result)
 
