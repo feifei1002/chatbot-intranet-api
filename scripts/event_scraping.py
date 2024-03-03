@@ -261,7 +261,13 @@ async def main():
     print(result)
 
 
+# Check if the script is being run as the main module
 if __name__ == "__main__":
+    # Load environment variables from the .env file
     load_dotenv()
+
+    # Enable nested asyncio event loops
     nest_asyncio.apply()
+
+    # Run the main asynchronous function
     asyncio.run(main())
