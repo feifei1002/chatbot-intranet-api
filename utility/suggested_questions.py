@@ -66,9 +66,8 @@ async def get_three_questions(suggest, convo_history):
 @router.get("/suggested")
 async def suggested_questions():
     # gets history of questions
-    # history = await placeholder_conversation()
     history = chat.chat_history
-    print("history is: ", chat.chat_history)
+    # print("history is: ", chat.chat_history)
 
     if chat.chat_history:
         # gets 3 suggested questions as json array
@@ -79,10 +78,10 @@ async def suggested_questions():
             "in the key 'questions'.",
             history)
 
-        print(suggested_qs)
+        # print(suggested_qs)
 
         # sends JSON response of the questions
         return Response(content=suggested_qs, media_type='application/json')
     else:
-        # if no chat history, respond with empty json
-        return Response(content=[], media_type='application/json')
+        # if no chat history, respond with only status code and no json
+        return Response(status_code=200)
