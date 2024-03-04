@@ -1,5 +1,7 @@
+import asyncio
 import os
-import qdrant_client
+import nest_asyncio
+from dotenv import load_dotenv
 from duckduckgo_search import AsyncDDGS
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import AsyncHtmlLoader
@@ -11,12 +13,13 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_together import TogetherEmbeddings
 from langchain_community.llms import Together
 from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.node_parser import SentenceSplitter
 from openai import OpenAI
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from llama_index.embeddings.together import TogetherEmbedding
-from llama_index.core import VectorStoreIndex, ServiceContext
-from llama_index.core import Document
+from llama_index.core import VectorStoreIndex, Document
 from llama_index.llms.together import TogetherLLM
+from qdrant_client import QdrantClient, AsyncQdrantClient
 
 TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY")
 QDRANT_API_KEY = os.environ.get("QDRANT__SERVICE__API_KEY")
@@ -26,8 +29,9 @@ embed_model = TogetherEmbedding(
     model_name="togethercomputer/m2-bert-80M-8k-retrieval", api_key=TOGETHER_API_KEY
 )
 
-qdrant_client = (qdrant_client.QdrantClient(QDRANT_URL, api_key=QDRANT_API_KEY))
-vector_store = QdrantVectorStore(client=qdrant_client,
+qdrant_client = QdrantClient(QDRANT_URL, api_key=QDRANT_API_KEY)
+aclient = AsyncQdrantClient(QDRANT_URL, api_key=QDRANT_API_KEY)
+vector_store = QdrantVectorStore(client=qdrant_client, aclient=aclient,
                                  collection_name="uni_web_documents")
 llm = TogetherLLM(
     model="mistralai/Mixtral-8x7B-Instruct-v0.1", api_key=TOGETHER_API_KEY
@@ -40,7 +44,7 @@ async def duckduckgo_search(query):
         # using max_results = 10 to get only the 10 most relevant data
         # and to prevent fetching too much data
         results = [r async for r in addgs.text(query, region='uk-en', safesearch='off',
-                                               timelimit='n', max_results=10)]
+                                               timelimit='n', backend="api", max_results=3)]
 
         # Extract the url link from the results
         links = [results['href'] for results in results]
@@ -66,8 +70,8 @@ async def transform_data(links):
     data_transformed_list.extend(data_transformed)
     # Split the data into chunks to avoid exceeding tokens limit
     text_splitter = CharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=0,
+        chunk_size=1024,
+        chunk_overlap=20,
         separator="\n"
     )
     documents = text_splitter.split_documents(data_transformed_list)
@@ -75,25 +79,31 @@ async def transform_data(links):
     return documents
 
 
-async def process_search_results(query, links):
-    documents = await transform_data(links)
-    # Use vectorstore to create embedding for each piece of text
+async def main():
+    query = "who is the head of school of computer science and informatics for cardiff university?"
+    search_links = await duckduckgo_search(query)
+    documents = await transform_data(search_links)
+    doc = [Document(text=t.page_content) for t in documents]
+
+    splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=50)
+    embed_model.embed_batch_size = 50
+
     pipeline = IngestionPipeline(
         transformations=[
-            embed_model,
+            splitter,
+            embed_model
         ],
-        vector_store=vector_store,
+        vector_store=vector_store
     )
-    pipeline.run(documents=[Document.example()])
-    service_context = ServiceContext.from_defaults(llm=llm,
-                                                   embed_model=embed_model)
 
-    VectorStoreIndex.from_vector_store(vector_store,
-                                       service_context=service_context)
+    await pipeline.arun(show_progress=True, documents=doc)
+    index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=embed_model, use_async=True)
+    retriever = index.as_retriever()
+    print(retriever)
+    results = await retriever.aretrieve("who is the head of school of computer science and informatics for cardiff "
+                                        "university?")
 
-    response = llm.complete(query)
-    # This uses TogetherAI LLM
-    print(response)
+    print(results)
 
     vectorstore = FAISS.from_documents(documents,
                                        TogetherEmbeddings(model="togethercomputer/m2-bert-80M-8k-retrieval"))
@@ -126,3 +136,9 @@ async def process_search_results(query, links):
 
     # Return value can be change later depends on which one we pass to the chat endpoint
     return output
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    nest_asyncio.apply()
+    asyncio.run(main())
