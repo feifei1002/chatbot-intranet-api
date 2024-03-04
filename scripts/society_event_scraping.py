@@ -2,6 +2,12 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import requests
+from pydantic import BaseModel  # Base class for creating Pydantic models
+
+
+class SocietyDTO(BaseModel):
+    organisation: str
+    content: str
 
 
 def scrape_links():
@@ -29,6 +35,13 @@ def scrape_links():
 def scrape_content(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
+    societies_data = []
+
+    soc_title = soup.find('h1')
+    if soc_title:
+        society_name = soc_title.get_text(strip=True)
+    else:
+        society_name = "Society not found or name not available."
 
     soc_content = soup.select_one("#soc-content")
     if soc_content:
@@ -36,6 +49,14 @@ def scrape_content(url):
     else:
         text_content = "Society content not found."
     print(text_content)
+
+    society_data = SocietyDTO(
+        organisation=society_name,
+        content=text_content
+    )
+    societies_data.append(society_data)
+
+    return societies_data
 
 
 # Call the function to get the links
