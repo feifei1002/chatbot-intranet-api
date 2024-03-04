@@ -8,6 +8,7 @@ from pydantic import BaseModel  # Base class for creating Pydantic models
 class SocietyDTO(BaseModel):
     organisation: str
     content: str
+    link: str  # Add link field to store the society link
 
 
 def scrape_links():
@@ -48,11 +49,12 @@ def scrape_content(url):
         text_content = soc_content.get_text(separator='\n', strip=True)
     else:
         text_content = "Society content not found."
-    print(text_content)
 
+    # Create SocietyDTO object with society name, content, and link
     society_data = SocietyDTO(
         organisation=society_name,
-        content=text_content
+        content=text_content,
+        link=url  # Pass the URL as the link field
     )
     societies_data.append(society_data)
 
