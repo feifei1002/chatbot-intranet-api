@@ -1,7 +1,6 @@
 import asyncio
 import os  # Module for operating system related functionalities
 import pickle  # Module for serializing and deserializing Python objects
-from typing import List, Optional, Any  # Typing module for type hints
 
 import httpx  # Async HTTP client library
 import nest_asyncio
@@ -9,15 +8,14 @@ from bs4 import BeautifulSoup  # Module for web scraping
 from dotenv import load_dotenv  # Module to load environment variables from .env file
 from llama_index.core import Document
 from llama_index.core import VectorStoreIndex  # Vector store index from llama_index
-from llama_index.core.base.embeddings.base import Embedding, BaseEmbedding  # Base classes for embeddings
 from llama_index.core.ingestion import IngestionPipeline  # Ingestion pipeline for document processing
 from llama_index.core.node_parser import SentenceSplitter  # Sentence splitter for chunking text
 from llama_index.vector_stores.qdrant import QdrantVectorStore  # Vector store for Qdrant
 from pydantic import BaseModel  # Base class for creating Pydantic models
-from pydantic import Field  # Field class from Pydantic for model fields
 from qdrant_client import QdrantClient, AsyncQdrantClient  # Qdrant client for interacting with Qdrant
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from llama_index.embeddings.openai import OpenAIEmbedding  # OpenAI embedding model
+
+from utils.custom_together_embed import CustomTogetherEmbedding
 
 
 class SocietyDTO(BaseModel):
@@ -26,142 +24,21 @@ class SocietyDTO(BaseModel):
     link: str
 
 
-class CustomTogetherEmbedding(BaseEmbedding):
-    api_base: str = Field("https://api.together.xyz/v1", description="Url for Together Embedding API")
-    api_key: str = Field("", description="Together API Key")
+async def scrape_links():
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://www.cardiffstudents.com/activities/societies/")
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    def __init__(
-            self,
-            model_name: str,
-            api_key: Optional[str] = None,
-            api_base: str = "https://api.together.xyz/v1",
-            **kwargs: Any,
-    ) -> None:
-        api_key = api_key or os.environ.get("TOGETHER_API_KEY", None)
-        super().__init__(
-            model_name=model_name,
-            api_key=api_key,
-            api_base=api_base,
-            **kwargs,
-        )
+        # Find links using the specified CSS selector
+        links = soup.select("li[data-msl-organisation-id] > a.msl-gl-link")
 
-    def _get_text_embedding(self, text: str) -> Embedding:
-        return self._generate_embedding(text, self.model_name)
+        # Extract href attributes from the links
+        href_links = [link['href'] for link in links]
 
-    def _get_query_embedding(self, query: str) -> Embedding:
-        return self._generate_embedding(query, self.model_name)
+        # Construct absolute URLs
+        abs_links = [f"https://www.cardiffstudents.com{href}" for href in href_links]
 
-    async def _agenerate_embedding(self, text: str, model_api_string: str) -> Embedding:
-        """Async generate embeddings from Together API.
-
-        Args:
-            text: str. An input text sentence or document.
-            model_api_string: str. An API string for a specific embedding model of your choice.
-
-        Returns:
-            embeddings: a list of float numbers. Embeddings correspond to your given text.
-        """
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-
-        async with httpx.AsyncClient(
-                timeout=None
-        ) as client:
-            response = await client.post(
-                self.api_base.strip("/") + "/embeddings",
-                headers=headers,
-                json={"input": text, "model": model_api_string},
-            )
-            if response.status_code != 200:
-                raise ValueError(
-                    f"Request failed with status code {response.status_code}: {response.text}"
-                )
-
-            return response.json()["data"][0]["embedding"]
-
-    def _get_text_embedding(self, text: str) -> Embedding:
-        """Get text embedding."""
-        return self._generate_embedding(text, self.model_name)
-
-    def _get_query_embedding(self, query: str) -> Embedding:
-        """Get query embedding."""
-        return self._generate_embedding(query, self.model_name)
-
-    def _get_text_embeddings(self, texts: List[str]) -> List[Embedding]:
-        """Get text embeddings."""
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-
-        response = httpx.post(
-            self.api_base.strip("/") + "/embeddings",
-            headers=headers,
-            json={"input": texts, "model": self.model_name},
-        )
-        if response.status_code != 200:
-            raise ValueError(
-                f"Request failed with status code {response.status_code}: {response.text}"
-            )
-
-        return [embedding["embedding"] for embedding in response.json()["data"]]
-
-    async def _aget_text_embedding(self, text: str) -> Embedding:
-        """Async get text embedding."""
-        return await self._agenerate_embedding(text, self.model_name)
-
-    async def _aget_query_embedding(self, query: str) -> Embedding:
-        """Async get query embedding."""
-        return await self._agenerate_embedding(query, self.model_name)
-
-    async def _aget_text_embeddings(self, texts: List[str]) -> List[Embedding]:
-        """Async get text embeddings."""
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-
-        async with httpx.AsyncClient(
-                timeout=None
-        ) as client:
-            response = await client.post(
-                self.api_base.strip("/") + "/embeddings",
-                headers=headers,
-                json={"input": texts, "model": self.model_name},
-            )
-            if response.status_code != 200:
-                raise ValueError(
-                    f"Request failed with status code {response.status_code}: {response.text}"
-                )
-
-            return [embedding["embedding"] for embedding in response.json()["data"]]
-
-
-def scrape_links():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-
-    driver = webdriver.Chrome(options=chrome_options)
-
-    driver.get("https://www.cardiffstudents.com/activities/societies/")
-
-    page_source = driver.page_source
-
-    driver.quit()
-
-    soup = BeautifulSoup(page_source, 'html.parser')
-
-    links = soup.select("#working-on a.msl-gl-link")
-
-    href_links = [f"https://www.cardiffstudents.com{link['href']}" for link in links]
-
-    return href_links
+        return abs_links
 
 
 async def scrape_content(url):
@@ -195,7 +72,7 @@ async def scrape_content(url):
 
 async def main():
     # Fetch links asynchronously
-    scraped_links = await asyncio.to_thread(scrape_links)
+    scraped_links = await scrape_links()
 
     # Create a list to store the results of scrape_content
     societies_results = []
@@ -213,13 +90,13 @@ async def main():
         # Create Document with text and metadata
         doc = Document(text=society.organisation,
                        metadata={"content": society.content,
-                                 "link": society.link})
+                                 "URL": society.link})
         documents.append(doc)
 
     # Save documents to a file
     pickle.dump(documents, open("societies.pkl", "wb"))
 
-    embed_model = CustomTogetherEmbedding(model_name="togethercomputer/m2-bert-80M-2k-retrieval")
+    embed_model = OpenAIEmbedding(model="text-embedding-3-large")
     splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
@@ -252,7 +129,7 @@ async def main():
     retriever = index.as_retriever()
 
     # Perform retrieval query
-    result = await retriever.aretrieve("Give me information on the boxing society")
+    result = await retriever.aretrieve("What is the yoga society?")
 
     # Print retrieval result
     print(result)
