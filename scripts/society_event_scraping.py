@@ -252,7 +252,7 @@ async def main():
     retriever = index.as_retriever()
 
     # Perform retrieval query
-    result = await retriever.aretrieve("Give me information about the Yoga society")
+    result = await retriever.aretrieve("Give me information on the boxing society")
 
     # Print retrieval result
     print(result)
