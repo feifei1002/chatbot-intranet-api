@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from utils import suggested_questions
+from utility import suggested_questions
 
 from routes import chat
 

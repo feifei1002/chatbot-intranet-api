@@ -9,6 +9,17 @@ from sse_starlette import EventSourceResponse
 
 router = APIRouter()
 
+# local variable for chat history,
+# to be accessed in suggested_questions.py
+chat_history = []
+
+
+# function to set local variable when running post request /chat
+def get_history(x):
+    # global variable is bad practice so need to figure out better method
+    global chat_history
+    chat_history = x
+
 
 class ConversationMessage(BaseModel):
     """
@@ -67,6 +78,10 @@ async def chat(chat_request: ChatRequest):
         stream=True
     )
 
+    # send chat history to suggested questions
+    get_history(messages)
+    print(chat_history)
+
     # Create an event generator to stream the response from OpenAI's format
     async def event_generator():
         async for event in response:
@@ -75,7 +90,7 @@ async def chat(chat_request: ChatRequest):
             content = delta.content
             if content is not None:
                 yield json.dumps({
-                      "text": delta.content
+                    "text": delta.content
                 })
 
     return EventSourceResponse(event_generator())
