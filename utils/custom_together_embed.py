@@ -1,13 +1,16 @@
 import os
 from typing import List, Optional, Any
 import httpx  # Async HTTP client library
-from llama_index.core.base.embeddings.base import Embedding, BaseEmbedding  # Base classes for embeddings
+# Base classes for embeddings
+from llama_index.core.base.embeddings.base import Embedding, BaseEmbedding
 from pydantic import Field  # Field class from Pydantic for model fields
 
 
 class CustomTogetherEmbedding(BaseEmbedding):
-    api_base: str = Field("https://api.together.xyz/v1", description="Url for Together Embedding API")
-    api_key: str = Field("", description="Together API Key")
+    api_base: str = Field("https://api.together.xyz/v1",
+                          description="Url for Together Embedding API")
+    api_key: str = Field("",
+                         description="Together API Key")
 
     def __init__(
             self,
@@ -35,10 +38,12 @@ class CustomTogetherEmbedding(BaseEmbedding):
 
         Args:
             text: str. An input text sentence or document.
-            model_api_string: str. An API string for a specific embedding model of your choice.
+            model_api_string: str.
+            An API string for a specific embedding model of your choice.
 
         Returns:
-            embeddings: a list of float numbers. Embeddings correspond to your given text.
+            embeddings: a list of float numbers.
+            Embeddings correspond to your given text.
         """
         headers = {
             "accept": "application/json",
@@ -56,7 +61,8 @@ class CustomTogetherEmbedding(BaseEmbedding):
             )
             if response.status_code != 200:
                 raise ValueError(
-                    f"Request failed with status code {response.status_code}: {response.text}"
+                    f"Request failed with status code "
+                    f"{response.status_code}: {response.text}"
                 )
 
             return response.json()["data"][0]["embedding"]
@@ -84,7 +90,8 @@ class CustomTogetherEmbedding(BaseEmbedding):
         )
         if response.status_code != 200:
             raise ValueError(
-                f"Request failed with status code {response.status_code}: {response.text}"
+                f"Request failed with status code"
+                f" {response.status_code}: {response.text}"
             )
 
         return [embedding["embedding"] for embedding in response.json()["data"]]
@@ -115,7 +122,8 @@ class CustomTogetherEmbedding(BaseEmbedding):
             )
             if response.status_code != 200:
                 raise ValueError(
-                    f"Request failed with status code {response.status_code}: {response.text}"
+                    f"Request failed with status code"
+                    f" {response.status_code}: {response.text}"
                 )
 
             return [embedding["embedding"] for embedding in response.json()["data"]]

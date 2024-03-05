@@ -9,13 +9,19 @@ from bs4 import BeautifulSoup  # Module for web scraping
 from dotenv import load_dotenv  # Module to load environment variables from .env file
 from llama_index.core import Document  # Document class from llama_index
 from llama_index.core import VectorStoreIndex  # Vector store index from llama_index
-from llama_index.core.ingestion import IngestionPipeline  # Ingestion pipeline for document processing
-from llama_index.core.node_parser import SentenceSplitter  # Sentence splitter for chunking text
-from llama_index.core.schema import MetadataMode  # Metadata mode enum from llama_index
-# from llama_index.embeddings.openai import OpenAIEmbedding  # OpenAI embedding model
-from llama_index.vector_stores.qdrant import QdrantVectorStore  # Vector store for Qdrant
-from pydantic import BaseModel  # Base class for creating Pydantic models
-from qdrant_client import QdrantClient, AsyncQdrantClient  # Qdrant client for interacting with Qdrant
+# Ingestion pipeline for document processing
+from llama_index.core.ingestion import IngestionPipeline
+# Sentence splitter for chunking text
+from llama_index.core.node_parser import SentenceSplitter
+# Metadata mode enum from llama_index
+from llama_index.core.schema import MetadataMode
+# from llama_index.embeddings.openai import OpenAIEmbedding
+# Vector store for Qdrant
+from llama_index.vector_stores.qdrant import QdrantVectorStore
+# Base class for creating Pydantic models
+from pydantic import BaseModel
+# Qdrant client for interacting with Qdrant
+from qdrant_client import QdrantClient, AsyncQdrantClient
 from utils.custom_together_embed import CustomTogetherEmbedding
 
 
@@ -49,12 +55,22 @@ async def scrape_events(soc_event_url):
 
         # Iterate over each event in the event day
         for event_elem in events:
-            # Extract event details such as organisation, name, time, location, and description
-            organisation = event_elem.select_one(".msl_event_organisation").get_text(strip=True)
-            event_name = event_elem.select_one(".msl_event_name").get_text(strip=True)
-            event_time = event_elem.select_one(".msl_event_time").get_text(strip=True)
-            event_location = event_elem.select_one(".msl_event_location").get_text(strip=True)
-            event_description = event_elem.select_one(".msl_event_description").get_text(strip=True)
+            # Extract event details such as
+            # organisation
+            # name
+            # time
+            # location
+            # description
+            organisation = (event_elem.select_one
+                            (".msl_event_organisation").get_text(strip=True))
+            event_name = (event_elem.select_one
+                          (".msl_event_name").get_text(strip=True))
+            event_time = (event_elem.select_one
+                          (".msl_event_time").get_text(strip=True))
+            event_location = (event_elem.select_one
+                              (".msl_event_location").get_text(strip=True))
+            event_description = event_elem.select_one(
+                ".msl_event_description").get_text(strip=True)
 
             # Handle cases where organisation or description may not be available
             if not organisation:
@@ -96,9 +112,9 @@ async def main():
     pickle.dump(documents, open("events.pkl", "wb"))
 
     # Initialise embedding model
-    # OpenAI Model works but needs a little tweaking
-    # embed_model = OpenAIEmbedding(model="text-embedding-3-large")
-    embed_model = CustomTogetherEmbedding(model_name="togethercomputer/m2-bert-80M-2k-retrieval")
+
+    embed_model = (CustomTogetherEmbedding
+                   (model_name="togethercomputer/m2-bert-80M-2k-retrieval"))
     splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
@@ -125,7 +141,10 @@ async def main():
     await pipeline.arun(show_progress=True, documents=documents)
 
     # Create index from vector store
-    index = VectorStoreIndex.from_vector_store(vector_store=store, embed_model=embed_model, use_async=True)
+    index = (VectorStoreIndex.from_vector_store
+             (vector_store=store,
+              embed_model=embed_model,
+              use_async=True))
 
     # Create retriever from index
     retriever = index.as_retriever()

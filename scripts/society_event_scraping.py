@@ -8,12 +8,17 @@ from bs4 import BeautifulSoup  # Module for web scraping
 from dotenv import load_dotenv  # Module to load environment variables from .env file
 from llama_index.core import Document
 from llama_index.core import VectorStoreIndex  # Vector store index from llama_index
-from llama_index.core.ingestion import IngestionPipeline  # Ingestion pipeline for document processing
-from llama_index.core.node_parser import SentenceSplitter  # Sentence splitter for chunking text
-from llama_index.vector_stores.qdrant import QdrantVectorStore  # Vector store for Qdrant
-from pydantic import BaseModel  # Base class for creating Pydantic models
-from qdrant_client import QdrantClient, AsyncQdrantClient  # Qdrant client for interacting with Qdrant
-# from llama_index.embeddings.openai import OpenAIEmbedding  # OpenAI embedding model
+# Ingestion pipeline for document processing
+from llama_index.core.ingestion import IngestionPipeline
+# Sentence splitter for chunking text
+from llama_index.core.node_parser import SentenceSplitter
+# Vector store for Qdrant
+from llama_index.vector_stores.qdrant import QdrantVectorStore
+# Base class for creating Pydantic models
+from pydantic import BaseModel
+# Qdrant client for interacting with Qdrant
+from qdrant_client import QdrantClient, AsyncQdrantClient
+# from llama_index.embeddings.openai import OpenAIEmbedding
 
 from utils.custom_together_embed import CustomTogetherEmbedding
 
@@ -98,7 +103,8 @@ async def main():
 
     # OpenAI Model works but needs a little tweaking
     # embed_model = OpenAIEmbedding(model="text-embedding-3-large")
-    embed_model = CustomTogetherEmbedding(model_name="togethercomputer/m2-bert-80M-2k-retrieval")
+    embed_model = (CustomTogetherEmbedding
+                   (model_name="togethercomputer/m2-bert-80M-2k-retrieval"))
     splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
@@ -125,7 +131,10 @@ async def main():
     await pipeline.arun(show_progress=True, documents=documents)
 
     # Create index from vector store
-    index = VectorStoreIndex.from_vector_store(vector_store=store, embed_model=embed_model, use_async=True)
+    index = (VectorStoreIndex.from_vector_store
+             (vector_store=store,
+              embed_model=embed_model,
+              use_async=True))
 
     # Create retriever from index
     retriever = index.as_retriever()
