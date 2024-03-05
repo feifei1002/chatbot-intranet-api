@@ -16,6 +16,7 @@ from llama_index.embeddings.openai import OpenAIEmbedding  # OpenAI embedding mo
 from llama_index.vector_stores.qdrant import QdrantVectorStore  # Vector store for Qdrant
 from pydantic import BaseModel  # Base class for creating Pydantic models
 from qdrant_client import QdrantClient, AsyncQdrantClient  # Qdrant client for interacting with Qdrant
+from utils.custom_together_embed import CustomTogetherEmbedding
 
 
 class EventDTO(BaseModel):
@@ -98,7 +99,9 @@ async def main():
     pickle.dump(documents, open("events.pkl", "wb"))
 
     # Initialise embedding model
-    embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    # OpenAI Model works but needs a little tweaking
+    # embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    embed_model = CustomTogetherEmbedding(model_name="togethercomputer/m2-bert-80M-2k-retrieval")
     splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 

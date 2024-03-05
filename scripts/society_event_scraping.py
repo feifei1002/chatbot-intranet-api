@@ -96,7 +96,9 @@ async def main():
     # Save documents to a file
     pickle.dump(documents, open("societies.pkl", "wb"))
 
-    embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    # OpenAI Model works but needs a little tweaking
+    # embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    embed_model = CustomTogetherEmbedding(model_name="togethercomputer/m2-bert-80M-2k-retrieval")
     splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
@@ -129,7 +131,7 @@ async def main():
     retriever = index.as_retriever()
 
     # Perform retrieval query
-    result = await retriever.aretrieve("What is the yoga society?")
+    result = await retriever.aretrieve("Get me information about the yoga society")
 
     # Print retrieval result
     print(result)
