@@ -66,10 +66,13 @@ async def get_three_questions(suggest, convo_history):
 @router.get("/suggested")
 async def suggested_questions():
     # gets history of questions
-    history = chat.chat_history
+    # history = chat.chat_history
+    history = [
+        {"role": "system", "content": "You are a helpful assistant."},
+    ]
     # print("history is: ", chat.chat_history)
 
-    if chat.chat_history:
+    if history:
         # gets 3 suggested questions as json array
         suggested_qs = await get_three_questions(
             "Based on this conversation history, "
