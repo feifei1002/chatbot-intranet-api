@@ -66,11 +66,13 @@ async def get_three_questions(suggest, convo_history):
 @router.get("/suggested")
 async def suggested_questions():
     # gets history of questions
-    # history = chat.chat_history
-    history = [
-        {"role": "system", "content": "You are a helpful assistant."},
-    ]
-    # print("history is: ", chat.chat_history)
+
+    # below line doesnt work
+    history = chat.get_chat_history()
+    # history = [
+    #     {"role": "system", "content": "You are a helpful assistant."},
+    # ]
+    print(history)
 
     if history:
         # gets 3 suggested questions as json array

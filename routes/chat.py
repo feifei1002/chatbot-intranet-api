@@ -52,38 +52,31 @@ client = AsyncOpenAI(
 
 @router.post("/chat_history")
 async def get_chat_history(messages: ChatHistory):
-    history = messages.chat_messages
-    q = messages.question
-    print("chat history is ", history)
-    print("question is ", q)
-#
-# @router.post("/chat_history")
-# async def chat_history(chat_request: ChatRequest):
-#     # messages1 = [
-#     #     {
-#     #         "role": "system",
-#     #         "content": "You're an assistant that helps university students at Cardiff University."  # noqa
-#     #                    " You can help me by answering my questions."
-#     #                    " You can also ask me questions."
-#     #                    f"\nCurrent Date: {date.today()}"
-#     #     }
-#     # ]
-#     #
-#     # for message1 in chat_request.previous_messages:
-#     #     if message1.role not in __allowed_roles:
-#     #         raise ValueError(f"Role {message1.role} is not allowed")
-#     #
-#     #     messages1.append(message1.model_dump())
-#     #
-#     # # history = chat_request.previous_messages
-#     # messages1.append({
-#     #     "role": "user",
-#     #     "content": chat_request.question
-#     # })
-#
-#     messages1 = chat_request.previous_messages
-#
-#     print("history is: ", messages1)
+    message_history = [
+        {
+            "role": "system",
+            "content": "You're an assistant that helps university students at Cardiff University."  # noqa
+                       " You can help me by answering my questions."
+                       " You can also ask me questions."
+                       f"\nCurrent Date: {date.today()}"
+        }
+    ]
+
+    for message in messages.chat_messages:
+        if message.role not in __allowed_roles:
+            raise ValueError(f"Role {message.role} is not allowed")
+
+        message_history.append(message.model_dump())
+
+    # Add the user's question to the messages
+    message_history.append({
+        "role": "user",
+        "content": messages.question
+    })
+
+    # print("history is ", message_history)
+
+    return message_history
 
 
 @router.post("/chat")
