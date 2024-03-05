@@ -39,7 +39,6 @@ class ChatRequest(BaseModel):
 
 class ChatHistory(BaseModel):
     chat_messages: list[ConversationMessage]
-    question: str
 
 
 __allowed_roles = ["user", "assistant"]
@@ -68,13 +67,7 @@ async def get_chat_history(messages: ChatHistory):
 
         message_history.append(message.model_dump())
 
-    # Add the user's question to the messages
-    message_history.append({
-        "role": "user",
-        "content": messages.question
-    })
-
-    # print("history is ", message_history)
+    print("history is ", message_history)
 
     return message_history
 
@@ -111,10 +104,6 @@ async def chat(chat_request: ChatRequest):
         model="mistralai/Mixtral-8x7B-Instruct-v0.1",
         stream=True
     )
-
-    # # send chat history to suggested questions
-    # get_history(messages)
-    # print(chat_history)
 
     # Create an event generator to stream the response from OpenAI's format
     async def event_generator():

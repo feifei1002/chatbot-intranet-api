@@ -68,10 +68,10 @@ async def suggested_questions():
     # gets history of questions
 
     # below line doesnt work
-    history = chat.get_chat_history()
-    # history = [
-    #     {"role": "system", "content": "You are a helpful assistant."},
-    # ]
+    # history = chat.get_chat_history()
+    history = [
+        {"role": "system", "content": "You are a helpful assistant."},
+    ]
     print(history)
 
     if history:
