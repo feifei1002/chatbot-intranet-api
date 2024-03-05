@@ -13,7 +13,7 @@ from llama_index.core.node_parser import SentenceSplitter  # Sentence splitter f
 from llama_index.vector_stores.qdrant import QdrantVectorStore  # Vector store for Qdrant
 from pydantic import BaseModel  # Base class for creating Pydantic models
 from qdrant_client import QdrantClient, AsyncQdrantClient  # Qdrant client for interacting with Qdrant
-from llama_index.embeddings.openai import OpenAIEmbedding  # OpenAI embedding model
+# from llama_index.embeddings.openai import OpenAIEmbedding  # OpenAI embedding model
 
 from utils.custom_together_embed import CustomTogetherEmbedding
 
