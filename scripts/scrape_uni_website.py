@@ -11,7 +11,8 @@ async def duckduckgo_search(query):
         # specify site:cardiff.ac.uk to only search for Cardiff University's website
         results = [r async for r in addgs.text(f"{query} site:cardiff.ac.uk",
                                                region='uk-en', safesearch='off',
-                                               timelimit='n', backend="api", max_results=10)]
+                                               timelimit='n', backend="api",
+                                               max_results=10)]
 
         # Extract the url link from the results
         links = [results['href'] for results in results]
