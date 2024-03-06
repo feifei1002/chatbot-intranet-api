@@ -24,7 +24,6 @@ from pydantic import BaseModel
 from qdrant_client import QdrantClient, AsyncQdrantClient
 
 
-
 class EventModel(BaseModel):
     date: str
     organisation: str
