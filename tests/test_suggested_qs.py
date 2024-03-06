@@ -12,17 +12,21 @@ def test_root():
     assert response.json() == {"message": "Hello World"}
 
 
-# test that /suggested loads with code 200 when no chat history
-def test_suggested_questions_no_history():
-    response = client.get("/suggested")
-    assert response.status_code == 200
-
-
 # test post request with chat history
 def test_post_chat_history():
     response = client.post(
-        "/chat_history",
+        "/suggested",
         json={"chat_messages": [{"content": "How old is Cardiff University?"
                                 , "role": "user"}]},
     )
     assert response.status_code == 200
+
+
+# test post request with invalid role 'system'
+def test_post_chat_history_invalid():
+    response = client.post(
+        "/suggested",
+        json={"chat_messages": [{"content": "This is an invalid message."
+                                , "role": "system"}]},
+    )
+    assert response.json() == {"error": "Invalid role sent"}
