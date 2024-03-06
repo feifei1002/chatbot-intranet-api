@@ -2,7 +2,10 @@ import os
 
 from fastapi import APIRouter, Response
 from openai import AsyncOpenAI
-from routes import chat
+from pydantic import BaseModel
+from datetime import date
+
+from routes.chat import ConversationMessage
 
 router = APIRouter()
 
@@ -11,33 +14,13 @@ TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY")
 client = AsyncOpenAI(api_key=TOGETHER_API_KEY,
                      base_url='https://api.together.xyz', )
 
+__allowed_roles = ["user", "assistant"]
 
-# function to create a basic conversation, so it can be used for suggestions
-# async def placeholder_conversation():
-#     # specifically set question for testing,
-#     # delete once chatbot conversations are implemented
-#     first_question = "What is Cardiff University known for?"
-#
-#     # current history of the conversation with the chatbot
-#     input_messages = [
-#         {"role": "system", "content": "You are a helpful assistant."},
-#         {"role": "user", "content": first_question}
-#     ]
-#
-#     # test conversation with api,
-#     # when working conversation with chatbot functions,
-#     # replace input_messages with full conversation
-#     api_response = await client.chat.completions.create(
-#         model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-#         messages=input_messages
-#     )
-#
-#     # add response to end of conversation history
-#     input_messages.append(
-#         {"role": "assistant", "content":
-#             str(api_response.choices[0].message.content)})
-#
-#     return input_messages
+storage = {}
+
+
+class ChatHistory(BaseModel):
+    chat_messages: list[ConversationMessage]
 
 
 # uses api to suggest 3 questions based on the previous chat history
@@ -62,16 +45,45 @@ async def get_three_questions(suggest, convo_history):
     return str(resp.choices[0].message.content)
 
 
+@router.post("/chat_history")
+async def get_chat_history(messages: ChatHistory):
+    message_history = [
+        {
+            "role": "system",
+            "content": "You're an assistant that helps university students at Cardiff University."  # noqa
+                       " You can help me by answering my questions."
+                       " You can also ask me questions."
+                       f"\nCurrent Date: {date.today()}"
+        }
+    ]
+
+    for message in messages.chat_messages:
+        if message.role not in __allowed_roles:
+            raise ValueError(f"Role {message.role} is not allowed")
+
+        message_history.append(message.model_dump())
+
+    # print("history is ", message_history)
+
+    storage['history'] = message_history
+
+    return message_history
+
+
 # function to ask question to openai and get response
 @router.get("/suggested")
 async def suggested_questions():
     # gets history of questions
 
-    # below line doesnt work
-    # history = chat.get_chat_history()
-    history = [
-        {"role": "system", "content": "You are a helpful assistant."},
-    ]
+    if 'history' not in storage:
+        return Response(status_code=200)
+
+    history = storage['history']
+
+    # history = [
+    #     {"role": "system", "content": "You are a helpful assistant."},
+    # ]
+
     print(history)
 
     if history:

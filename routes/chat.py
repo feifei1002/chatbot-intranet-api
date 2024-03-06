@@ -8,17 +8,6 @@ from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
 router = APIRouter()
-#
-# # local variable for chat history,
-# # to be accessed in suggested_questions.py
-# chat_history = []
-#
-#
-# # function to set local variable when running post request /chat
-# def get_history(x):
-#     # global variable is bad practice so need to figure out better method
-#     global chat_history
-#     chat_history = x
 
 
 class ConversationMessage(BaseModel):
@@ -37,8 +26,8 @@ class ChatRequest(BaseModel):
     question: str
 
 
-class ChatHistory(BaseModel):
-    chat_messages: list[ConversationMessage]
+# class ChatHistory(BaseModel):
+#     chat_messages: list[ConversationMessage]
 
 
 __allowed_roles = ["user", "assistant"]
@@ -49,27 +38,27 @@ client = AsyncOpenAI(
 )
 
 
-@router.post("/chat_history")
-async def get_chat_history(messages: ChatHistory):
-    message_history = [
-        {
-            "role": "system",
-            "content": "You're an assistant that helps university students at Cardiff University."  # noqa
-                       " You can help me by answering my questions."
-                       " You can also ask me questions."
-                       f"\nCurrent Date: {date.today()}"
-        }
-    ]
-
-    for message in messages.chat_messages:
-        if message.role not in __allowed_roles:
-            raise ValueError(f"Role {message.role} is not allowed")
-
-        message_history.append(message.model_dump())
-
-    print("history is ", message_history)
-
-    return message_history
+# @router.post("/chat_history")
+# async def get_chat_history(messages: ChatHistory):
+#     message_history = [
+#         {
+#             "role": "system",
+#             "content": "You're an assistant that helps university students at Cardiff University."  # noqa
+#                        " You can help me by answering my questions."
+#                        " You can also ask me questions."
+#                        f"\nCurrent Date: {date.today()}"
+#         }
+#     ]
+#
+#     for message in messages.chat_messages:
+#         if message.role not in __allowed_roles:
+#             raise ValueError(f"Role {message.role} is not allowed")
+#
+#         message_history.append(message.model_dump())
+#
+#     print("history is ", message_history)
+#
+#     return message_history
 
 
 @router.post("/chat")
