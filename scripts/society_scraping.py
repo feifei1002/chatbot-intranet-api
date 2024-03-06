@@ -23,7 +23,7 @@ from qdrant_client import QdrantClient, AsyncQdrantClient
 from utils.custom_together_embed import CustomTogetherEmbedding
 
 
-class SocietyDTO(BaseModel):
+class SocietyModel(BaseModel):
     organisation: str
     content: str
     link: str
@@ -65,7 +65,7 @@ async def scrape_content(url):
         text_content = "Society content not found."
 
     # Create SocietyDTO object with society name, content, and link
-    society_data = SocietyDTO(
+    society_data = SocietyModel(
         organisation=society_name,
         content=text_content,
         link=url  # Pass the URL as the link field
@@ -103,8 +103,7 @@ async def main():
 
     # OpenAI Model works but needs a little tweaking
     # embed_model = OpenAIEmbedding(model="text-embedding-3-large")
-    embed_model = (CustomTogetherEmbedding
-                   (model_name="togethercomputer/m2-bert-80M-2k-retrieval"))
+    embed_model = CustomTogetherEmbedding(model_name="togethercomputer/m2-bert-80M-2k-retrieval")
     splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
@@ -131,10 +130,9 @@ async def main():
     await pipeline.arun(show_progress=True, documents=documents)
 
     # Create index from vector store
-    index = (VectorStoreIndex.from_vector_store
-             (vector_store=store,
+    index = VectorStoreIndex.from_vector_store(vector_store=store,
               embed_model=embed_model,
-              use_async=True))
+              use_async=True)
 
     # Create retriever from index
     retriever = index.as_retriever()

@@ -25,7 +25,7 @@ from qdrant_client import QdrantClient, AsyncQdrantClient
 from utils.custom_together_embed import CustomTogetherEmbedding
 
 
-class EventDTO(BaseModel):
+class EventModel(BaseModel):
     date: str
     organisation: str
     name: str
@@ -61,14 +61,14 @@ async def scrape_events(soc_event_url):
             # time
             # location
             # description
-            organisation = (event_elem.select_one
-                            (".msl_event_organisation").get_text(strip=True))
-            event_name = (event_elem.select_one
-                          (".msl_event_name").get_text(strip=True))
-            event_time = (event_elem.select_one
-                          (".msl_event_time").get_text(strip=True))
-            event_location = (event_elem.select_one
-                              (".msl_event_location").get_text(strip=True))
+            organisation = event_elem.select_on(
+                ".msl_event_organisation").get_text(strip=True)
+            event_name = event_elem.select_one(
+                ".msl_event_name").get_text(strip=True)
+            event_time = event_elem.select_one(
+                ".msl_event_time").get_text(strip=True)
+            event_location = event_elem.select_one(
+                ".msl_event_location").get_text(strip=True)
             event_description = event_elem.select_one(
                 ".msl_event_description").get_text(strip=True)
 
@@ -80,7 +80,7 @@ async def scrape_events(soc_event_url):
                 event_description = "Event description not found."
 
             # Create an EventDTO object with extracted event details
-            event_data = EventDTO(
+            event_data = EventModel(
                 date=event_day,
                 organisation=organisation,
                 name=event_name,
@@ -113,8 +113,9 @@ async def main():
 
     # Initialise embedding model
 
-    embed_model = (CustomTogetherEmbedding
-                   (model_name="togethercomputer/m2-bert-80M-2k-retrieval"))
+    # embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    embed_model = CustomTogetherEmbedding(
+        model_name="togethercomputer/m2-bert-80M-2k-retrieval")
     splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
@@ -141,10 +142,9 @@ async def main():
     await pipeline.arun(show_progress=True, documents=documents)
 
     # Create index from vector store
-    index = (VectorStoreIndex.from_vector_store
-             (vector_store=store,
+    index = VectorStoreIndex.from_vector_store(vector_store=store,
               embed_model=embed_model,
-              use_async=True))
+              use_async=True)
 
     # Create retriever from index
     retriever = index.as_retriever()
