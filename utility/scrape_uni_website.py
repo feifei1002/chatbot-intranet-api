@@ -25,7 +25,9 @@ async def duckduckgo_search(query):
     async with AsyncDDGS() as addgs:
         # using max_results = 10 to get only the 10 most relevant data
         # and to prevent fetching too much data
-        results = [r async for r in addgs.text(f"{query} site:cardiff.ac.uk", region='uk-en', safesearch='off',
+        # f"{query} site:cardiff.ac.uk"
+        results = [r async for r in addgs.text(f"{query} site:cardiff.ac.uk",
+                                               region='uk-en', safesearch='off',
                                                timelimit='n', backend="api", max_results=10)]
 
         # Extract the url link from the results
@@ -50,8 +52,8 @@ async def transform_data(links):
     return documents
 
 
-async def main():
-    query = "who is the head of school of computer science and informatics for cardiff university?"
+async def main(query):
+    # query = "who is the head of school of computer science and informatics?"
     search_links = await duckduckgo_search(query)
     documents = await transform_data(search_links)
     doc = [Document(text=document.page_content) for document in documents]
@@ -66,9 +68,10 @@ async def main():
 
     # embed each node
     index = VectorStoreIndex(embed_model=embed_model, nodes=nodes)
-
     retriever = index.as_retriever()
-    results = await retriever.aretrieve("who is the head of school of computer science and informatics?")
+    # results = await retriever.aretrieve("who is the head of school of "
+    #                                     "computer science and informatics?")
+    results = await retriever.aretrieve(query)
     print(results)
     return results
 
@@ -109,4 +112,5 @@ if __name__ == "__main__":
     load_dotenv()
     # https://github.com/run-llama/llama_index/issues/10590#issuecomment-1939298329
     nest_asyncio.apply()
-    asyncio.run(main())
+    user_question = "who is the head of school of computer science and informatics?"
+    asyncio.run(main(user_question))
