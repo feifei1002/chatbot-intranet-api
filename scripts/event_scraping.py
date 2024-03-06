@@ -15,14 +15,14 @@ from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 # Metadata mode enum from llama_index
 from llama_index.core.schema import MetadataMode
-# from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.embeddings.openai import OpenAIEmbedding
 # Vector store for Qdrant
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 # Base class for creating Pydantic models
 from pydantic import BaseModel
 # Qdrant client for interacting with Qdrant
 from qdrant_client import QdrantClient, AsyncQdrantClient
-from utils.custom_together_embed import CustomTogetherEmbedding
+
 
 
 class EventModel(BaseModel):
@@ -113,9 +113,7 @@ async def main():
 
     # Initialise embedding model
 
-    # embed_model = OpenAIEmbedding(model="text-embedding-3-large")
-    embed_model = CustomTogetherEmbedding(
-        model_name="togethercomputer/m2-bert-80M-2k-retrieval")
+    embed_model = OpenAIEmbedding(model="text-embedding-3-large")
     splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 

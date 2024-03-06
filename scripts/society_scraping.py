@@ -18,9 +18,7 @@ from llama_index.vector_stores.qdrant import QdrantVectorStore
 from pydantic import BaseModel
 # Qdrant client for interacting with Qdrant
 from qdrant_client import QdrantClient, AsyncQdrantClient
-# from llama_index.embeddings.openai import OpenAIEmbedding
-
-from utils.custom_together_embed import CustomTogetherEmbedding
+from llama_index.embeddings.openai import OpenAIEmbedding
 
 
 class SocietyModel(BaseModel):
@@ -102,8 +100,7 @@ async def main():
     pickle.dump(documents, open("societies.pkl", "wb"))
 
     # OpenAI Model works but needs a little tweaking
-    # embed_model = OpenAIEmbedding(model="text-embedding-3-large")
-    embed_model = CustomTogetherEmbedding(model_name="togethercomputer/m2-bert-80M-2k-retrieval")
+    embed_model = OpenAIEmbedding(model="text-embedding-3-large")
     splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
