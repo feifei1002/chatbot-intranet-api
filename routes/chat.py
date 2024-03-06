@@ -26,39 +26,12 @@ class ChatRequest(BaseModel):
     question: str
 
 
-# class ChatHistory(BaseModel):
-#     chat_messages: list[ConversationMessage]
-
-
 __allowed_roles = ["user", "assistant"]
 
 client = AsyncOpenAI(
     base_url="https://api.together.xyz/v1",
     api_key=os.environ["TOGETHER_API_KEY"],
 )
-
-
-# @router.post("/chat_history")
-# async def get_chat_history(messages: ChatHistory):
-#     message_history = [
-#         {
-#             "role": "system",
-#             "content": "You're an assistant that helps university students at Cardiff University."  # noqa
-#                        " You can help me by answering my questions."
-#                        " You can also ask me questions."
-#                        f"\nCurrent Date: {date.today()}"
-#         }
-#     ]
-#
-#     for message in messages.chat_messages:
-#         if message.role not in __allowed_roles:
-#             raise ValueError(f"Role {message.role} is not allowed")
-#
-#         message_history.append(message.model_dump())
-#
-#     print("history is ", message_history)
-#
-#     return message_history
 
 
 @router.post("/chat")
