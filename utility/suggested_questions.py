@@ -55,14 +55,16 @@ async def get_chat_history(messages: ChatHistory):
     message_history = [
         {
             "role": "system",
-            "content": "You're an assistant that helps university students at Cardiff University." 
+            "content": "You're an assistant that helps university "
+                       "students at Cardiff University."
                        " You can help me by answering my questions."
                        " You can also ask me questions."
                        f"\nCurrent Date: {date.today()}"
         }
     ]
 
-    # adds each message form the chat history to message_history, if valid role (user or assistant)
+    # adds each message form the chat history to message_history,
+    # if valid role (user or assistant)
     for message in messages.chat_messages:
         if message.role not in __allowed_roles:
             raise ValueError(f"Role {message.role} is not allowed")

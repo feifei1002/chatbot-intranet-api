@@ -22,6 +22,7 @@ def test_suggested_questions_no_history():
 def test_post_chat_history():
     response = client.post(
         "/chat_history",
-        json={"chat_messages": [{"content": "How old is Cardiff University?", "role": "user"}]},
+        json={"chat_messages": [{"content": "How old is Cardiff University?"
+                                , "role": "user"}]},
     )
     assert response.status_code == 200
