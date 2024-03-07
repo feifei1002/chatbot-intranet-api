@@ -60,8 +60,8 @@ async def scrape_events(soc_event_url):
             # time
             # location
             # description
-            organisation = event_elem.select_on(
-                ".msl_event_organisation").get_text(strip=True)
+            organisation_elem = event_elem.select_one(".msl_event_organisation")
+            organisation = organisation_elem.get_text(strip=True) if organisation_elem else "Organisation name not found."
             event_name = event_elem.select_one(
                 ".msl_event_name").get_text(strip=True)
             event_time = event_elem.select_one(
@@ -72,8 +72,8 @@ async def scrape_events(soc_event_url):
                 ".msl_event_description").get_text(strip=True)
 
             # Handle cases where organisation or description may not be available
-            if not organisation:
-                organisation = "Organisation name not found."
+            #if not organisation:
+              #  organisation = "Organisation name not found."
 
             if not event_description:
                 event_description = "Event description not found."
