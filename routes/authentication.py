@@ -1,68 +1,64 @@
+import os
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter
-from datetime import datetime, timedelta, timezone
-from typing import Annotated
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+from fastapi import HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt
 from pydantic import BaseModel
 
+from utils.auth_helper import login, UniCredentials, BadCredentialsException
 
-SECRET_KEY = "TO DO"
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Check if SECRET_KEY is set
+# You can generate one with: openssl rand -hex 32
+if SECRET_KEY is None:
+    raise Exception("SECRET_KEY environment variable not set")
+
 
 class Token(BaseModel):
     access_token: str
     token_type: str
 
-class TokenData(BaseModel):
-    username: str | None = None
-
-class User(BaseModel):
-    username: str
-
-class Password(User):
-    hashed_password: str
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter()
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+def create_access_token(data: dict):
+    # Create a JWT token with the data
+    encoded_jwt = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
+@router.post("/token", response_model=Token)
+async def login_for_access_token(credentials: UniCredentials):
+    try:
+        # Login ang get cookies
+        cookies = await login(credentials)
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-@router.post("/token")
-async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-) -> Token:
-    user =
-    if not user:
+        # Create a JWT token with the username, expiration time and cookies
+        access_token = create_access_token(
+            data={
+                "sub": credentials.username.lower(),
+                "exp": datetime.utcnow() + access_token_expires,
+                "cookies": cookies,
+            },
+        )
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+        }
+    except BadCredentialsException:
+        # throw 401 if the credentials are incorrect
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    return Token(access_token=access_token, token_type="bearer")
