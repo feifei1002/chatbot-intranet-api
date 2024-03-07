@@ -24,13 +24,3 @@ app.include_router(text_to_speech.router)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-
-async def scrape_uni_website(query):
-    # get the links for relevant data based on the user's query
-    search_links = await duckduckgo_search(query)
-    # Transform the data into readable texts
-    await transform_data(search_links)
-    # Process the data to generate response based on user's query
-    response = await process_search_results(query, search_links)
-    return {"response": response}
