@@ -45,10 +45,9 @@ async def scrape_links():
 
 
 async def scrape_content(url):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(url)
         soup = BeautifulSoup(response.text, 'html.parser')
-    societies_data = []
 
     soc_title = soup.find('h1')
     if soc_title:
@@ -68,32 +67,26 @@ async def scrape_content(url):
         content=text_content,
         link=url  # Pass the URL as the link field
     )
-    societies_data.append(society_data)
 
-    return societies_data
+    # Wrap the society_data in a list before returning
+    return [society_data]
 
 
 async def main():
     # Fetch links asynchronously
     scraped_links = await scrape_links()
 
-    # Create a list to store the results of scrape_content
-    societies_results = []
-
     # Asynchronously scrape content from each link
-    for link in scraped_links:
-        # Await the result of scrape_content for each link
-        content = await scrape_content(link)
-        # Extend the results list with the scraped content
-        societies_results.extend(content)
+    tasks = [scrape_content(link) for link in scraped_links]
+    societies_results = await asyncio.gather(*tasks)
 
     # Create Document objects for each society
     documents = []
     for society in societies_results:
-        # Create Document with text and metadata
-        doc = Document(text=society.organisation,
-                       metadata={"content": society.content,
-                                 "URL": society.link})
+        doc = Document(
+            text=society.organisation,
+            metadata={"content": society.content, "URL": society.link}
+        )
         documents.append(doc)
 
     # Save documents to a file
@@ -128,8 +121,8 @@ async def main():
 
     # Create index from vector store
     index = VectorStoreIndex.from_vector_store(vector_store=store,
-              embed_model=embed_model,
-              use_async=True)
+                                               embed_model=embed_model,
+                                               use_async=True)
 
     # Create retriever from index
     retriever = index.as_retriever()

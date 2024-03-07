@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from httpx import AsyncClient
 from scripts.society_scraping import scrape_links, scrape_content, SocietyModel
@@ -29,10 +31,13 @@ async def test_scrape_content():
     # Call scrape_links to obtain the URLs
     links = await scrape_links()
 
-    for link in links:
+    # Create tasks for scraping content for each link
+    tasks = [scrape_content(link) for link in links]
 
-        societies_data = await scrape_content(link)
+    # Execute tasks concurrently and wait for all to complete
+    societies_data_list = await asyncio.gather(*tasks)
 
+    for societies_data in societies_data_list:
         # Validate the structure of the societies data
         assert isinstance(societies_data, list)  # Ensure societies_data is a list
 
