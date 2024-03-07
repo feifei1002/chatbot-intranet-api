@@ -4,9 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes import chat
 from utils import text_to_speech
 
-from utility.scrape_uni_website import (duckduckgo_search,
-                                        transform_data,
-                                        process_search_results)
 
 app = FastAPI()
 
