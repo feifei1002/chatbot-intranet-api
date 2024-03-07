@@ -1,4 +1,3 @@
-from fastapi.openapi.models import Response
 from openai import OpenAI
 from pydantic import BaseModel
 from fastapi import FastAPI, APIRouter
@@ -13,6 +12,7 @@ class TTSRequest(BaseModel):
     text: str
 
 
+# Past in the response from the chat endpoint and output it using OpenAI TTS
 @router.post("/tts")
 async def tts(request: TTSRequest):
     resp = client.audio.speech.create(
