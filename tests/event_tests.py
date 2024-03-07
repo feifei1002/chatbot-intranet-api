@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 from scripts.event_scraping import scrape_events, EventModel
 
+
 @pytest.mark.asyncio
 async def test_event_index_page():
     # URL of the website's events index page
@@ -41,7 +42,8 @@ async def test_search_event_and_organisation():
     found_event = False
     for event in events_data:
         # Check if the event name and organisation name match the search criteria
-        if event.name == event_name_to_search and event.organisation == organization_to_search:
+        if (event.name == event_name_to_search
+                and event.organisation == organization_to_search):
             found_event = True
             break
 
