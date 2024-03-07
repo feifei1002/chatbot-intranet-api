@@ -39,3 +39,25 @@ async def test_scrape_content():
         for society in societies_data:
             # Ensure each society is an instance of SocietyModel
             assert isinstance(society, SocietyModel)
+
+
+@pytest.mark.asyncio
+async def test_search_specific_society_by_link():
+    # Define the link of the society to search for
+    specific_society_link = "https://www.cardiffstudents.com/activities/society/abbasociety/"
+
+    # Call the scrape_links function with the parsed HTML
+    links = await scrape_links()
+
+    # Initialize a variable to track if the specific society is found
+    found_society = False
+
+    # Loop through each link to check if it matches the specific link
+    for link in links:
+        # Check if the link matches the specific society link
+        if link == specific_society_link:
+            found_society = True
+            break
+
+    # Ensure the specific society link is found
+    assert found_society, f"Society with link '{specific_society_link}' not found"
