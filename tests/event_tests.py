@@ -20,4 +20,5 @@ async def event_index_page_test():
     assert isinstance(events_data, list)  # Ensure events_data is a list
 
     for event in events_data:
-        assert isinstance(event, EventModel)  # Ensure each event is an instance of EventModel
+        # Ensure each event is an instance of EventModel
+        assert isinstance(event, EventModel)

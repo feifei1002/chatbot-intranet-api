@@ -61,7 +61,8 @@ async def scrape_events(soc_event_url):
             # location
             # description
             organisation_elem = event_elem.select_one(".msl_event_organisation")
-            organisation = organisation_elem.get_text(strip=True) if organisation_elem else "Organisation name not found."
+            organisation = organisation_elem.get_text(strip=True) \
+                if organisation_elem else "Organisation name not found."
             event_name = event_elem.select_one(
                 ".msl_event_name").get_text(strip=True)
             event_time = event_elem.select_one(
@@ -72,8 +73,8 @@ async def scrape_events(soc_event_url):
                 ".msl_event_description").get_text(strip=True)
 
             # Handle cases where organisation or description may not be available
-            #if not organisation:
-              #  organisation = "Organisation name not found."
+            # if not organisation:
+            # organisation = "Organisation name not found."
 
             if not event_description:
                 event_description = "Event description not found."
@@ -140,8 +141,8 @@ async def main():
 
     # Create index from vector store
     index = VectorStoreIndex.from_vector_store(vector_store=store,
-              embed_model=embed_model,
-              use_async=True)
+                                               embed_model=embed_model,
+                                               use_async=True)
 
     # Create retriever from index
     retriever = index.as_retriever()
