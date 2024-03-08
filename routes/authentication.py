@@ -1,10 +1,10 @@
 import os
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt
+from jose import jwt, JWTError
 from pydantic import BaseModel
 
 from utils.auth_helper import login, UniCredentials, BadCredentialsException
@@ -62,3 +62,36 @@ async def login_for_access_token(credentials: UniCredentials):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+@router.get("/session")
+async def session(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        # Decode the JWT token
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+
+        # Check if the jwt contains a username
+        # Even though it's technically impossible
+        # Due to the JWT signing
+        if username is None:
+            raise credentials_exception
+
+        # Check if the token expired
+        if payload.get("exp") < datetime.utcnow().timestamp():
+            raise credentials_exception
+
+        return {
+            "valid": True,
+            # We just check if it's < 5 minutes from expiring
+            "needs_refresh": payload.get("exp") < (datetime.utcnow() + timedelta(minutes=5)).timestamp()
+        }
+    except JWTError:
+        # Someone is tampering with the token
+        raise credentials_exception
