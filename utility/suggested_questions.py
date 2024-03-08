@@ -4,7 +4,7 @@ from fastapi import APIRouter, Response
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 
-from routes.chat import ConversationMessage
+from utils.models import ConversationMessage
 
 router = APIRouter()
 
