@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter
 from fastapi.responses import Response
 
+
 client = OpenAI()
 router = APIRouter()
 
