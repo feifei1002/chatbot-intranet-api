@@ -29,4 +29,6 @@ def test_post_chat_history_invalid():
         json={"chat_messages": [{"content": "This is an invalid message."
                                 , "role": "system"}]},
     )
-    assert response.json() == {"error": "Invalid role sent"}
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Invalid role sent"}
+

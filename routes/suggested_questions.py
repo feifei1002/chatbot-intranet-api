@@ -47,7 +47,7 @@ async def get_three_questions(convo_history: list[dict]):
 
 # function to get conversation history and then suggestions three related questions
 @router.post("/suggested")
-async def suggested_questions(messages: ChatHistory):
+async def suggest_questions_from_conversation(messages: ChatHistory):
     # sets default start of the conversation history, with specific role 'system'
     message_history = [
         {
