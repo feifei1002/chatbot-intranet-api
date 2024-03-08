@@ -21,6 +21,7 @@ async def login(credentials: UniCredentials):
 
         page = await context.new_page()
 
+        # Go to the intranet page, as it will redirect to the login page
         await page.goto("https://intranet.cardiff.ac.uk/students")
 
         # Wait for redirect to login page
@@ -45,10 +46,13 @@ async def login(credentials: UniCredentials):
             await locator.wait_for(timeout=100)
             status = (await locator.inner_text()).strip()
 
+            # Raise exception  with the status message
             raise BadCredentialsException(f"Failed to login: {status}")
         except TimeoutError:
             pass
 
+        # Wait for redirect to intranet
+        # so that authentication is complete
         async with page.expect_navigation(
                 url="https://intranet.cardiff.ac.uk/students"
         ) as _:
@@ -81,9 +85,11 @@ async def login(credentials: UniCredentials):
 
 async def validate_cookies(cookies):
     async with AsyncClient() as client:
+        # Set cookies in the client
         for name, value in cookies.items():
             client.cookies.set(name, value["value"], value["domain"], value["path"])
 
+        # Make a request to request a SSO provider that doesn't exist
         resp = await client.get("https://idp.cf.ac.uk/idp/profile/SAML2/Unsolicited/SSO?providerId=test")
 
         # Will get an unsupported page, as we're using an invalid providerId
