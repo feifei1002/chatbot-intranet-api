@@ -1,15 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from utility import suggested_questions
 
-from routes import chat
+from routes import chat, suggested_questions
 
 from utility.scrape_uni_website import (duckduckgo_search,
                                         transform_data,
                                         process_search_results)
 
 app = FastAPI()
-app.include_router(suggested_questions.router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,6 +17,7 @@ app.add_middleware(
 )
 
 app.include_router(chat.router)
+app.include_router(suggested_questions.router)
 
 
 @app.get("/")

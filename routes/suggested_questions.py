@@ -1,6 +1,6 @@
 import os
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, HTTPException
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 
@@ -22,14 +22,14 @@ class ChatHistory(BaseModel):
 
 
 # uses api to suggest 3 questions based on the previous chat history
-async def get_three_questions(convo_history):
+async def get_three_questions(convo_history: list[dict]):
     # new variable to avoid continuously appending to input_messages
-    previous_messages = convo_history
+    previous_messages = convo_history.copy()
 
     # adds question prompt to ask for suggestions
     previous_messages.append(
         {"role": "user",
-         "content": "Based on this conversation history, what are 3 good questions to ask after this conversation? " # noqa
+         "content": "Based on the conversation so far, what are 3 questions that you think I may be interested in asking next? " # noqa
             "Make sure to format in a JSON object with an array in the key 'questions'."}) # noqa
 
     # gets response after asking openapi question
@@ -42,7 +42,7 @@ async def get_three_questions(convo_history):
     )
 
     # return response from api
-    return str(resp.choices[0].message.content)
+    return resp.choices[0].message.content
 
 
 # function to get conversation history and then suggestions three related questions
@@ -65,7 +65,8 @@ async def suggested_questions(messages: ChatHistory):
                 "content": message.content
             })
         else:
-            return {"error": "Invalid role sent"}
+            # http exception because invalid role being sent should result in 404 error
+            raise HTTPException(status_code=404, detail="Invalid role sent")
 
     # gets 3 suggested questions as json array
     suggested_qs = await get_three_questions(message_history)
