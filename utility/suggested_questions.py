@@ -8,7 +8,7 @@ from routes.chat import ConversationMessage
 
 router = APIRouter()
 
-# use api key to allow usage of openai
+# use api key to allow usage of together AI
 TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY")
 client = AsyncOpenAI(api_key=TOGETHER_API_KEY,
                      base_url='https://api.together.xyz', )
@@ -29,10 +29,8 @@ async def get_three_questions(convo_history):
     # adds question prompt to ask for suggestions
     previous_messages.append(
         {"role": "user",
-         "content": "Based on this conversation history, "
-            "what are 3 good questions to ask after this conversation? "
-            "Make sure to format in a JSON object with an array "
-            "in the key 'questions'."})
+         "content": "Based on this conversation history, what are 3 good questions to ask after this conversation? " # noqa
+            "Make sure to format in a JSON object with an array in the key 'questions'."}) # noqa
 
     # gets response after asking openapi question
     resp = await client.chat.completions.create(
@@ -50,11 +48,12 @@ async def get_three_questions(convo_history):
 # function to get conversation history and then suggestions three related questions
 @router.post("/suggested")
 async def suggested_questions(messages: ChatHistory):
+    # sets default start of the conversation history, with specific role 'system'
     message_history = [
         {
             "role": "system",
-            "content": "You're an assistant that helps university students at "
-                       "Cardiff University. You can help me by answering my questions."
+            "content": "You're an assistant that helps university students at Cardiff University. " # noqa
+            "You can help me by answering my questions."
         }
     ]
 
