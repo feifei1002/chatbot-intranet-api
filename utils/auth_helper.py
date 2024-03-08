@@ -64,7 +64,8 @@ async def login(credentials: UniCredentials):
             domain = cookie["domain"]
 
             # Skip cookies from other hostnames
-            if name == "JSESSIONID" and domain == "idp.cf.ac.uk" or name.startswith("IPC") and domain == ".cf.ac.uk":
+            if name == "JSESSIONID" and domain == "idp.cf.ac.uk" or \
+                    name.startswith("IPC") and domain == ".cf.ac.uk":
                 # Extract cookie name, value, domain and path
                 cookies_dict[name] = {
                     "value": cookie["value"],

@@ -90,7 +90,9 @@ async def session(token: str = Depends(oauth2_scheme)):
         return {
             "valid": True,
             # We just check if it's < 5 minutes from expiring
-            "needs_refresh": payload.get("exp") < (datetime.utcnow() + timedelta(minutes=5)).timestamp()
+            "needs_refresh": payload.get("exp") < (
+                    datetime.utcnow() + timedelta(minutes=5)
+            ).timestamp()
         }
     except JWTError:
         # Someone is tampering with the token
