@@ -1,9 +1,8 @@
 from openai import OpenAI
 from pydantic import BaseModel
-from fastapi import FastAPI, APIRouter
+from fastapi import APIRouter
 from fastapi.responses import Response
 
-app = FastAPI()
 client = OpenAI()
 router = APIRouter()
 

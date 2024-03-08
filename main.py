@@ -1,9 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import chat
-from utils import text_to_speech
-
+from routes import chat, text_to_speech
 
 app = FastAPI()
 
