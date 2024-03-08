@@ -1,3 +1,4 @@
+from httpx import AsyncClient
 from playwright.async_api import async_playwright, TimeoutError
 from pydantic import BaseModel
 
@@ -55,14 +56,35 @@ async def login(credentials: UniCredentials):
 
         cookies = await context.cookies()
 
-        # Find JSESSIONID cookie
+        cookies_dict = {}
+
+        # Find, and extract all the important cookies used for authentication
         for cookie in cookies:
-            # Skip cookies from other hostnames
-            if cookie["domain"] != "idp.cf.ac.uk":
-                continue
-
             name = cookie["name"]
-            if name == "JSESSIONID":
-                return {name: cookie["value"]}
+            domain = cookie["domain"]
 
-        raise Exception("Could not find cookie from authentication")
+            # Skip cookies from other hostnames
+            if name == "JSESSIONID" and domain == "idp.cf.ac.uk" or name.startswith("IPC") and domain == ".cf.ac.uk":
+                # Extract cookie name, value, domain and path
+                cookies_dict[name] = {
+                    "value": cookie["value"],
+                    "domain": cookie["domain"],
+                    "path": cookie["path"],
+                }
+
+        if not cookies_dict:
+            raise Exception("Could not find cookie from authentication")
+
+        return cookies_dict
+
+
+async def validate_cookies(cookies):
+    async with AsyncClient() as client:
+        for name, value in cookies.items():
+            client.cookies.set(name, value["value"], value["domain"], value["path"])
+
+        resp = await client.get("https://idp.cf.ac.uk/idp/profile/SAML2/Unsolicited/SSO?providerId=test")
+
+        # Will get an unsupported page, as we're using an invalid providerId
+        # If we're not logged in, we'll get a 302 redirect to the login page
+        return resp.status_code == 400
