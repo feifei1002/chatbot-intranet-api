@@ -2,174 +2,27 @@ import asyncio
 import os
 import pickle
 from hashlib import sha256
-from typing import List, Optional, Any
 
-import httpx
 from dotenv import load_dotenv
 from httpx import URL
 from llama_index.core import VectorStoreIndex
-from llama_index.core.base.embeddings.base import Embedding, BaseEmbedding
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.readers.web import WholeSiteReader
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from playwright.async_api import async_playwright
-from pydantic import Field
 from qdrant_client import QdrantClient, AsyncQdrantClient
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
-
-class CustomTogetherEmbedding(BaseEmbedding):
-    api_base: str = Field(
-        default="https://api.together.xyz/v1",
-        description="The base URL for the Together API.",
-    )
-    api_key: str = Field(
-        default="",
-        description="The API key for the Together API. If not set, will attempt to use the TOGETHER_API_KEY environment variable." # noqa
-    )
-
-    def __init__(
-            self,
-            model_name: str,
-            api_key: Optional[str] = None,
-            api_base: str = "https://api.together.xyz/v1",
-            **kwargs: Any,
-    ) -> None:
-        api_key = api_key or os.environ.get("TOGETHER_API_KEY", None)
-        super().__init__(
-            model_name=model_name,
-            api_key=api_key,
-            api_base=api_base,
-            **kwargs,
-        )
-
-    def _generate_embedding(self, text: str, model_api_string: str) -> Embedding:
-        """Generate embeddings from Together API.
-
-        Args:
-            text: str. An input text sentence or document.
-            model_api_string: str. An API string for a specific embedding model of your choice.
-
-        Returns:
-            embeddings: a list of float numbers. Embeddings correspond to your given text.
-        """ # noqa
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-
-        response = httpx.post(
-            self.api_base.strip("/") + "/embeddings",
-            headers=headers,
-            json={"input": text, "model": model_api_string},
-        )
-        if response.status_code != 200:
-            raise ValueError(
-                f"Request failed with status code {response.status_code}: {response.text}" # noqa
-            )
-
-        return response.json()["data"][0]["embedding"]
-
-    async def _agenerate_embedding(self, text: str, model_api_string: str) -> Embedding:
-        """Async generate embeddings from Together API.
-
-        Args:
-            text: str. An input text sentence or document.
-            model_api_string: str. An API string for a specific embedding model of your choice.
-
-        Returns:
-            embeddings: a list of float numbers. Embeddings correspond to your given text.
-        """ # noqa
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-
-        async with httpx.AsyncClient(
-                timeout=None
-        ) as client:
-            response = await client.post(
-                self.api_base.strip("/") + "/embeddings",
-                headers=headers,
-                json={"input": text, "model": model_api_string},
-            )
-            if response.status_code != 200:
-                raise ValueError(
-                    f"Request failed with status code {response.status_code}: {response.text}" # noqa
-                )
-
-            return response.json()["data"][0]["embedding"]
-
-    def _get_text_embedding(self, text: str) -> Embedding:
-        """Get text embedding."""
-        return self._generate_embedding(text, self.model_name)
-
-    def _get_query_embedding(self, query: str) -> Embedding:
-        """Get query embedding."""
-        return self._generate_embedding(query, self.model_name)
-
-    def _get_text_embeddings(self, texts: List[str]) -> List[Embedding]:
-        """Get text embeddings."""
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-
-        response = httpx.post(
-            self.api_base.strip("/") + "/embeddings",
-            headers=headers,
-            json={"input": texts, "model": self.model_name},
-        )
-        if response.status_code != 200:
-            raise ValueError(
-                f"Request failed with status code {response.status_code}: {response.text}" # noqa
-            )
-
-        return [embedding["embedding"] for embedding in response.json()["data"]]
-
-    async def _aget_text_embedding(self, text: str) -> Embedding:
-        """Async get text embedding."""
-        return await self._agenerate_embedding(text, self.model_name)
-
-    async def _aget_query_embedding(self, query: str) -> Embedding:
-        """Async get query embedding."""
-        return await self._agenerate_embedding(query, self.model_name)
-
-    async def _aget_text_embeddings(self, texts: List[str]) -> List[Embedding]:
-        """Async get text embeddings."""
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-
-        async with httpx.AsyncClient(
-                timeout=None
-        ) as client:
-            response = await client.post(
-                self.api_base.strip("/") + "/embeddings",
-                headers=headers,
-                json={"input": texts, "model": self.model_name},
-            )
-            if response.status_code != 200:
-                raise ValueError(
-                    f"Request failed with status code {response.status_code}: {response.text}" # noqa
-                )
-
-            return [embedding["embedding"] for embedding in response.json()["data"]]
+from selenium.webdriver.support.wait import WebDriverWait
 
 
 class CustomWholeSiteReader(WholeSiteReader):
     # upstream def: def __init__(self, prefix: str, max_depth: int = 10) -> None
-    def __init__(self, prefix: str, cookies: dict[str, str], max_depth: int = 10) -> None: # noqa
+    def __init__(self, prefix: str, cookies: dict[str, str], max_depth: int = 10) -> None:  # noqa
         self.cookies = cookies
         self.all_urls = set()
         self.cache = {}
@@ -183,7 +36,7 @@ class CustomWholeSiteReader(WholeSiteReader):
 
         Returns:
             WebDriver: An instance of Chrome WebDriver.
-        """ # noqa
+        """  # noqa
         try:
             import chromedriver_autoinstaller
         except ImportError:
@@ -334,8 +187,13 @@ async def main():
     # documents = pickle.load(open("intranet.pkl", "rb"))
 
     # TODO: Created issue upstream for proper batching: https://github.com/run-llama/llama_index/issues/11086
-    embed_model = CustomTogetherEmbedding(
-        model_name="togethercomputer/m2-bert-80M-2k-retrieval"
+    # We're no longer using Together API for embeddings,
+    # as OpenAI's embeddings are more accurate
+    # embed_model = TogetherEmbedding(
+    #     model_name="togethercomputer/m2-bert-80M-2k-retrieval"
+    # )
+    embed_model = OpenAIEmbedding(
+        model_name="text-embedding-3-large",
     )
     # splitter = SemanticSplitterNodeParser(
     #     buffer_size=1, breakpoint_percentile_threshold=95, embed_model=embed_model
@@ -381,7 +239,7 @@ async def main():
 
     # Test the retriever
     result = await retriever.aretrieve(
-        "Are there any grants available for postgraduate studies?"
+        "connect to intranet vpn"
     )
 
     print(result)
