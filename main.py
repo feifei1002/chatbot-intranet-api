@@ -1,15 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-<<<<<<< main.py
-from routes import chat, text_to_speech
-=======
-from routes import chat, suggested_questions
-
-from utility.scrape_uni_website import (duckduckgo_search,
-                                        transform_data,
-                                        process_search_results)
->>>>>>> main.py
+from routes import chat, suggested_questions, text_to_speech
 
 app = FastAPI()
 
