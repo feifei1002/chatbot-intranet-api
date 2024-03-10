@@ -6,4 +6,4 @@ __pycache__/
 .env
 
 # Liquibase properties contains sensitive information
-liquibase/liquibase.properties
+liquibase.properties

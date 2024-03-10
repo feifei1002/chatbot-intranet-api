@@ -3,6 +3,8 @@ from ical_library import client as ical_client
 from playwright.async_api import async_playwright
 from pydantic import BaseModel
 
+from utils.db import pool
+
 
 async def get_ical_url(cookies_dict: dict) -> str:
     async with async_playwright() as p:
@@ -46,6 +48,27 @@ async def get_ical_url(cookies_dict: dict) -> str:
         ical_url = await page.locator(
             "input.gwt-TextBox.gwt-TextBox-readonly[type='text']"
         ).input_value()
+
+        return ical_url
+
+
+async def get_cached_ical_url(username: str, cookies_dict: dict) -> str:
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "SELECT ical_url FROM ical_cache WHERE username = %s", (username,)
+            )
+
+            ical_url = await cur.fetchone()
+
+            if ical_url is None:
+                ical_url = await get_ical_url(cookies_dict)
+
+            await cur.execute(
+                "INSERT INTO ical_cache (ical_url, username) VALUES (%s, %s)"
+                " ON CONFLICT (username) DO UPDATE SET ical_url = EXCLUDED.ical_url",
+                (ical_url, username,)
+            )
 
         return ical_url
 
