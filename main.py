@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,7 +12,17 @@ from utility.scrape_uni_website import (duckduckgo_search,
 from routes import authentication
 from utils import db
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        await db.pool.open()
+        yield
+    finally:
+        await db.pool.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,16 +34,6 @@ app.add_middleware(
 app.include_router(chat.router)
 app.include_router(authentication.router)
 app.include_router(suggested_questions.router)
-
-
-@app.on_event("startup")
-async def startup_event():
-    await db.pool.open()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    await db.pool.close()
 
 
 @app.get("/")
