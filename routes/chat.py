@@ -7,16 +7,9 @@ from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
 from utils import intranet_search_tool
+from utils.models import ConversationMessage
 
 router = APIRouter()
-
-
-class ConversationMessage(BaseModel):
-    """
-    A message in a conversation
-    """
-    role: str
-    content: str
 
 
 class ChatRequest(BaseModel):
