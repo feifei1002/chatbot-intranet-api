@@ -1,13 +1,6 @@
 import pytest
-import os
-from openai import OpenAI
 from unittest.mock import patch, Mock
 from scripts.scrape_uni_website import duckduckgo_search
-
-TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY")
-client = OpenAI(api_key=TOGETHER_API_KEY, base_url="https://api.together.xyz/v1")
-
-print("TOGETHER API KEY: ", TOGETHER_API_KEY)
 
 
 @pytest.mark.asyncio
