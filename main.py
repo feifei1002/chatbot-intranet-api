@@ -8,7 +8,7 @@ from utility.scrape_uni_website import (duckduckgo_search,
                                         process_search_results)
 
 from routes import authentication
-
+from utils import db
 
 app = FastAPI()
 
@@ -22,6 +22,16 @@ app.add_middleware(
 app.include_router(chat.router)
 app.include_router(authentication.router)
 app.include_router(suggested_questions.router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    await db.pool.open()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await db.pool.close()
 
 
 @app.get("/")
