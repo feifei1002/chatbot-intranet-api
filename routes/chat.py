@@ -6,7 +6,7 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
-from utils import intranet_search_tool
+from utils import intranet_search_tool, uni_website_search_tool
 from utils.models import ConversationMessage
 
 router = APIRouter()
@@ -34,6 +34,7 @@ async def chat(chat_request: ChatRequest):
                        " You can help me by answering my questions."
                        " You can also ask me questions."
                        "\nYou can use the following tools when a user asks a query: Intranet search"  # noqa
+                       "\nYou can use the following tools when a user asks a query: Cardiff University website search"  # noqa
                        "\nYou must use the responses from the tool to answer the student's query." # noqa
                        "\nWhen the user is asking a follow-up question, you need to use the previous messages to form the context of the new question for tools."  # noqa
                        f"\nCurrent Date: {date.today()}"
@@ -68,6 +69,24 @@ async def chat(chat_request: ChatRequest):
                         "query": {
                             "type": "string",
                             "description": "The question to search for in the intranet's documents", # noqa
+                        }
+                    },
+                    "required": ["query"],
+                },
+            },
+        },
+        # University's website tool
+        {
+            "type": "function",
+            "function": {
+                "name": "search_uni_website",
+                "description": "Search the Cardiff University website, to help answer the user's query",  # noqa
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The question to search for in the Cardiff University's webiste",  # noqa
                         }
                     },
                     "required": ["query"],
@@ -200,6 +219,9 @@ async def chat(chat_request: ChatRequest):
                         case "search_intranet_documents":
                             result = await intranet_search_tool \
                                 .search_intranet(**call["arguments"])
+                        case "search_uni_website":
+                            result = await uni_website_search_tool \
+                                .search_uni_website(**call["arguments"])
                         case _:
                             raise ValueError(
                                 f"Assistant called unknown function: {name}"
