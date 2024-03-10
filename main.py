@@ -7,6 +7,9 @@ from utility.scrape_uni_website import (duckduckgo_search,
                                         transform_data,
                                         process_search_results)
 
+from routes import authentication
+
+
 app = FastAPI()
 
 app.add_middleware(
@@ -17,6 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(chat.router)
+app.include_router(authentication.router)
 app.include_router(suggested_questions.router)
 
 
