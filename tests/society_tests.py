@@ -66,3 +66,29 @@ async def test_search_specific_society_by_link():
 
     # Ensure the specific society link is found
     assert found_society, f"Society with link '{specific_society_link}' not found"
+
+
+@pytest.mark.asyncio
+async def test_search_specific_society_by_description():
+    # Define the keywords to search for in the society description
+    keywords = ["ABBA", "society", "resist"]
+
+    # Call the scrape_links function with the parsed HTML
+    soc_links = await scrape_links()
+
+    # Initialize a variable to track if the specific society is found
+    found_society_by_description = False
+
+    # Loop through each link to check if any society's description contains the keywords
+    for soc_link in soc_links:
+        # Call scrape_content for each link to get the description of each society
+        society_content = await scrape_content(soc_link)
+        for society in society_content:
+            # Check if the description contains all the keywords
+            if all(keyword in society.content for keyword in keywords):
+                found_society_by_description = True
+                break
+
+        # Ensure a society with the specific description is found
+        assert found_society_by_description, \
+            "Society with specified description not found"
