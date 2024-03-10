@@ -1,6 +1,7 @@
 from httpx import AsyncClient
 from ical_library import client as ical_client
 from playwright.async_api import async_playwright
+from pydantic import BaseModel
 
 
 async def get_ical_url(cookies_dict: dict) -> str:
@@ -49,7 +50,14 @@ async def get_ical_url(cookies_dict: dict) -> str:
         return ical_url
 
 
-async def parse_ical(ical_url: str) -> list[dict]:
+class TimetableEvent(BaseModel):
+    start: str
+    end: str
+    location: str
+    description: str
+
+
+async def parse_ical(ical_url: str) -> list[TimetableEvent]:
     events = []
 
     async with AsyncClient() as client:
@@ -58,11 +66,11 @@ async def parse_ical(ical_url: str) -> list[dict]:
         calendar = ical_client.parse_lines_into_calendar(response.text)
 
         for event in calendar.events:
-            events.append({
-                "start": event.start.to_datetime_string(),
-                "end": event.end.to_datetime_string(),
-                "location": event.location.value,
-                "description": event.description.value,
-            })
+            events.append(TimetableEvent(
+                start=event.start.to_datetime_string(),
+                end=event.end.to_datetime_string(),
+                location=event.location.value,
+                description=event.description.value,
+            ))
 
     return events
