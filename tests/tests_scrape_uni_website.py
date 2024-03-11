@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, Mock
-from scripts.scrape_uni_website import duckduckgo_search
+from utils.scrape_uni_website import duckduckgo_search
 
 
 @pytest.mark.asyncio
@@ -9,7 +9,7 @@ async def test_duckduckgo_search():
     mock_results = Mock()
 
     # Set up patching for DuckDuckGoSearchAPIWrapper and DuckDuckGoSearchResults
-    with patch('scripts.scrape_uni_website.duckduckgo_search'):
+    with patch('utils.scrape_uni_website.duckduckgo_search'):
         # Set up the expected values
         query = ("What are the tuition for study "
                  "computer science at Cardiff University?")
