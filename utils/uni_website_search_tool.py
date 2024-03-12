@@ -17,7 +17,6 @@ async def search_uni_website(query: str) -> str:
     Search the Cardiff University's website for the given query
     """
     search_links = await duckduckgo_search(query)
-    print("Search Links: ", search_links)
     documents = transform_data(search_links)
     # doc = [Document(text=document.page_content) for document in documents]
     embed_model = OpenAIEmbedding(
@@ -34,7 +33,7 @@ async def search_uni_website(query: str) -> str:
         ],
         documents=documents,
     )
-    nodes = pipeline.run(show_progress=True)
+    nodes = await pipeline.arun(show_progress=True)
 
     # embed each node
     index = VectorStoreIndex(embed_model=embed_model, nodes=nodes)
