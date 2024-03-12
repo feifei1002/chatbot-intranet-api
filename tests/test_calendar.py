@@ -5,6 +5,7 @@ from utils.timetables_helper import parse_ical
 
 @pytest.mark.asyncio
 async def test_ical_extraction():
+    # Saved timetables ical file in s3 bucket as mock data
     events = await parse_ical("https://d5g8.c14.e2-1.dev/kavin-cardiff-uni-fra/timetable.ics")
 
     # Check that the calendar has the correct number of events

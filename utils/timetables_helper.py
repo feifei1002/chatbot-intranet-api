@@ -7,6 +7,12 @@ from utils.db import pool
 
 
 async def get_ical_url(cookies_dict: dict) -> str:
+    """
+    Fetch the ical url from the timetables service using the cookies
+    :param cookies_dict: authentication cookies used to
+    browse the timetables service
+    :return: the ical url
+    """
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
 
@@ -53,8 +59,17 @@ async def get_ical_url(cookies_dict: dict) -> str:
 
 
 async def get_cached_ical_url(username: str, cookies_dict: dict) -> str:
+    """
+    Get the cached ical url from the database, else fetch it with
+    the cookies and upsert it.
+    :param username: the username to lookup in the database for cache
+    :param cookies_dict: authentication cookies used to
+    fetch ical for timetables service
+    :return:
+    """
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
+            # Check if database has the ical URL already in cache
             await cur.execute(
                 "SELECT ical_url FROM ical_cache WHERE username = %s", (username,)
             )
@@ -66,6 +81,7 @@ async def get_cached_ical_url(username: str, cookies_dict: dict) -> str:
             else:
                 return ical_url[0]
 
+            # UPSERT statement to update ical url for user
             await cur.execute(
                 "INSERT INTO ical_cache (ical_url, username) VALUES (%s, %s)"
                 " ON CONFLICT (username) DO UPDATE SET ical_url = EXCLUDED.ical_url",
@@ -83,6 +99,11 @@ class TimetableEvent(BaseModel):
 
 
 async def parse_ical(ical_url: str) -> list[TimetableEvent]:
+    """'
+    Parse ical url and fetch timetable events from it.
+
+    :param ical_url The ical URL to fetch.
+    """
     events = []
 
     async with AsyncClient() as client:
