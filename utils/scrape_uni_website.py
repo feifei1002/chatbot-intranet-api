@@ -1,5 +1,5 @@
 from duckduckgo_search import AsyncDDGS
-from llama_index.readers.web import SimpleWebPageReader
+from llama_index.readers.web import AsyncWebPageReader
 
 
 async def duckduckgo_search(query) -> list[str]:
@@ -19,7 +19,7 @@ async def duckduckgo_search(query) -> list[str]:
 
 
 def transform_data(links):
-    loader = SimpleWebPageReader(html_to_text=True)
+    loader = AsyncWebPageReader(html_to_text=True)
     documents = loader.load_data(urls=links)
     return documents
 
