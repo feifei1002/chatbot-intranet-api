@@ -63,6 +63,8 @@ async def get_cached_ical_url(username: str, cookies_dict: dict) -> str:
 
             if ical_url is None:
                 ical_url = await get_ical_url(cookies_dict)
+            else:
+                return ical_url[0]
 
             await cur.execute(
                 "INSERT INTO ical_cache (ical_url, username) VALUES (%s, %s)"
@@ -70,7 +72,7 @@ async def get_cached_ical_url(username: str, cookies_dict: dict) -> str:
                 (ical_url, username,)
             )
 
-        return ical_url
+            return ical_url
 
 
 class TimetableEvent(BaseModel):
