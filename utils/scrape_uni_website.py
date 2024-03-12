@@ -6,18 +6,18 @@ from llama_index.readers.web import SimpleWebPageReader
 
 async def duckduckgo_search(query) -> list[str]:
     # using max_results = 10 to get only the 10 most relevant data
-    search_function = partial(
-        AsyncDDGS().text,
-        region='uk-en',
-        safesearch='off',
-        timelimit='n',
-        backend="api",
-        max_results=10
-    )
+    async with AsyncDDGS() as addgs:
+        search_function = partial(
+            addgs.text,
+            region='uk-en',
+            safesearch='off',
+            timelimit='n',
+            backend="api",
+            max_results=10
+        )
 
     # Take in the user's query using Async DuckDuckGoSearch (DDGS)
     # specify site:cardiff.ac.uk to only search for Cardiff University's website
-    async with AsyncDDGS() as addgs:
         results = [r async for r in search_function(f"{query} site:cardiff.ac.uk")]
 
         # Extract the url link from the results
@@ -33,6 +33,7 @@ def transform_data(links):
 
 
 async def main():
+    # https://statics.teams.cdn.office.net/evergreen-assets/safelinks/1/atp-safelinks.html
     search_links = asyncio.to_thread(duckduckgo_search)
     search_task = asyncio.create_task(search_links)
     await search_task
