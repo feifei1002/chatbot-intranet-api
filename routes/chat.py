@@ -33,7 +33,7 @@ async def chat(chat_request: ChatRequest):
             "content": "You're an assistant that helps university students at Cardiff University."  # noqa
                        " You can help me by answering my questions."
                        " You can also ask me questions."
-                       "\nYou can use the following tools when a user asks a query: Intranet search, Cardiff University's website"  # noqa
+                       "\nYou can use the following tools when a user asks a query: Intranet search, Search University Website"  # noqa
                        "\nYou must use the responses from the tool to answer the student's query." # noqa
                        "\nWhen the user is asking a follow-up question, you need to use the previous messages to form the context of the new question for tools."  # noqa
                        f"\nCurrent Date: {date.today()}"
