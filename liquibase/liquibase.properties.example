@@ -1,0 +1,5 @@
+changeLogFile = changelog-main.xml
+driver = org.postgresql.Driver
+url = jdbc:postgresql://UPDATE_ME
+username = UPDATE_ME
+password = UPDATE_ME
