@@ -4,3 +4,7 @@
 __pycache__/
 
 .env
+*.pkl
+
+# Liquibase properties contains sensitive information
+liquibase.properties
