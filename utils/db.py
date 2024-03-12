@@ -10,6 +10,4 @@ if connection_uri is None:
 pool = AsyncConnectionPool(
     conninfo=connection_uri,
     open=False,
-    max_idle=300,
-    kwargs={"options": "-c idle_session_timeout=0"},
 )
