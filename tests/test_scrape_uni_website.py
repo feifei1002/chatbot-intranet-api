@@ -11,7 +11,7 @@ async def test_duckduckgo_search():
     # Set up patching for DuckDuckGoSearchAPIWrapper and DuckDuckGoSearchResults
     with patch('utils.scrape_uni_website.duckduckgo_search'):
         # Set up the expected values
-        query = ("What are the tuition for study "
+        query = ("What are the tuition for studying "
                  "computer science at Cardiff University?")
         expected_result = ["https://www.cardiff.ac.uk/study/undergraduate"
                            "/courses/course/computer-science-bsc"]
