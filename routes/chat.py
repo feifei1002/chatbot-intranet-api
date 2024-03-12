@@ -85,7 +85,7 @@ async def chat(chat_request: ChatRequest):
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The question to search for on Cardiff University's webiste",  # noqa
+                            "description": "The question to search for on Cardiff University's website",  # noqa
                         }
                     },
                     "required": ["query"],
