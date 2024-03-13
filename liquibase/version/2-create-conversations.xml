@@ -19,6 +19,11 @@
     </changeSet>
 
     <changeSet id="2-1" author="fei" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="conversation-messages"/>
+            </not>
+        </preConditions>
         <createTable tableName="conversation-messages">
             <column name="message_id" type="int">
                 <constraints primaryKey="true" nullable="false"/>
@@ -44,6 +49,39 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+    </changeSet>
+
+    <changeSet id="2-4" author="alex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <uniqueConstraintExists tableName="conversations"
+                                        columnNames="conversation_id"/>
+            </not>
+        </preConditions>
+        <addUniqueConstraint tableName="conversations"
+                             columnNames="conversation_id"
+                             constraintName="unique_conversation_id"/>
+    </changeSet>
+
+    <changeSet id="2-5" author="alex">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="conversation-history"/>
+            <tableExists tableName="conversations"/>
+            <tableExists tableName="conversation-messages"/>
+        </preConditions>
+        <addForeignKeyConstraint baseTableName="conversation-history"
+                                 baseColumnNames="message_id"
+                                 constraintName="fk_conversation_history_message"
+                                 referencedTableName="conversation-messages"
+                                 referencedColumnNames="message_id"
+                                 referencedTableSchemaName="public"/>
+
+        <addForeignKeyConstraint baseTableName="conversation-history"
+                                 baseColumnNames="conversation_id"
+                                 constraintName="fk_conversation_history_conversation"
+                                 referencedTableName="conversations"
+                                 referencedColumnNames="conversation_id"
+                                 referencedTableSchemaName="public"/>
     </changeSet>
 
 </databaseChangeLog>
