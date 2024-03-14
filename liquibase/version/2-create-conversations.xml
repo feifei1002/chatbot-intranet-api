@@ -21,10 +21,10 @@
     <changeSet id="2-1" author="fei" dbms="postgresql">
         <preConditions onFail="MARK_RAN">
             <not>
-                <tableExists tableName="conversation-messages"/>
+                <tableExists tableName="conversation_messages"/>
             </not>
         </preConditions>
-        <createTable tableName="conversation-messages">
+        <createTable tableName="conversation_messages">
             <column name="message_id" type="int">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
@@ -38,7 +38,7 @@
     </changeSet>
 
     <changeSet id="2-3" author="fei" dbms="postgresql">
-        <createTable tableName="conversation-history">
+        <createTable tableName="conversation_history">
             <column name="history_id" type="int">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
@@ -65,18 +65,18 @@
 
     <changeSet id="2-5" author="alex">
         <preConditions onFail="MARK_RAN">
-            <tableExists tableName="conversation-history"/>
+            <tableExists tableName="conversation_history"/>
             <tableExists tableName="conversations"/>
-            <tableExists tableName="conversation-messages"/>
+            <tableExists tableName="conversation_messages"/>
         </preConditions>
-        <addForeignKeyConstraint baseTableName="conversation-history"
+        <addForeignKeyConstraint baseTableName="conversation_history"
                                  baseColumnNames="message_id"
                                  constraintName="fk_conversation_history_message"
-                                 referencedTableName="conversation-messages"
+                                 referencedTableName="conversation_messages"
                                  referencedColumnNames="message_id"
                                  referencedTableSchemaName="public"/>
 
-        <addForeignKeyConstraint baseTableName="conversation-history"
+        <addForeignKeyConstraint baseTableName="conversation_history"
                                  baseColumnNames="conversation_id"
                                  constraintName="fk_conversation_history_conversation"
                                  referencedTableName="conversations"
