@@ -327,7 +327,10 @@ async def extract_learning_central_stream_entries(
                     # Parse the grade details
                     item_specific_data = entry["itemSpecificData"]
                     title = item_specific_data["title"]
-                    course = courses[entry["se_courseId"]]
+                    course_id = entry.get("se_courseId")
+                    if course_id is None:
+                        course_id = entry["se_orgId"]
+                    course = courses[course_id]
                     view_url = BASE_URL + entry['se_rhs']
                     grade_details = item_specific_data["gradeDetails"]
                     calculation = grade_details["calculationType"]
