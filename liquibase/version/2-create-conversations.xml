@@ -84,4 +84,15 @@
                                  referencedTableSchemaName="public"/>
     </changeSet>
 
+    <changeSet id="2-6" author="fei">
+        <addAutoIncrement columnDataType="int"
+            columnName="message_id"
+            defaultOnNull="false"
+            generationType="ALWAYS"
+            incrementBy="1"
+            schemaName="public"
+            startWith="1"
+            tableName="conversation_messages"/>
+    </changeSet>
+
 </databaseChangeLog>
