@@ -22,7 +22,7 @@ async def get_learning_central_cookies(cookies_dict: dict) -> list[dict]:
     :return: the cookies from the learning central service
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
+        browser = await p.chromium.launch(headless=True)
 
         context = await browser.new_context()
 
