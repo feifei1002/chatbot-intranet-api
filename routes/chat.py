@@ -3,6 +3,7 @@ from datetime import date
 
 from fastapi import APIRouter
 from openai import AsyncOpenAI
+from opentelemetry import trace
 from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
@@ -34,7 +35,7 @@ async def chat(chat_request: ChatRequest):
                        " You can help me by answering my questions."
                        " You can also ask me questions."
                        "\nYou can use the following tools when a user asks a query: Intranet search, Search University Website"  # noqa
-                       "\nYou must use the responses from the tool to answer the student's query." # noqa
+                       "\nYou must use the responses from the tool to answer the student's query."  # noqa
                        "\nWhen the user is asking a follow-up question, you need to use the previous messages to form the context of the new question for tools."  # noqa
                        f"\nCurrent Date: {date.today()}"
         }
@@ -61,13 +62,13 @@ async def chat(chat_request: ChatRequest):
             "type": "function",
             "function": {
                 "name": "search_intranet_documents",
-                "description": "Search the intranet's documents for a query, to help answer the user's query", # noqa
+                "description": "Search the intranet's documents for a query, to help answer the user's query",  # noqa
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The question to search for in the intranet's documents", # noqa
+                            "description": "The question to search for in the intranet's documents",  # noqa
                         }
                     },
                     "required": ["query"],
@@ -93,6 +94,8 @@ async def chat(chat_request: ChatRequest):
             },
         }
     ]
+
+    chat_tracer = trace.get_tracer("chat_api")
 
     # Create an event generator to stream the response from OpenAI's format
     async def event_generator():
@@ -203,8 +206,13 @@ async def chat(chat_request: ChatRequest):
         while function_call:
             function_call = False
             # We keep generating, until the assistant stops calling tools
-            async for __event in inner_generator():
-                yield __event
+            with chat_tracer.start_span("completion_response") as span:
+                delta_count = 0
+                async for __event in inner_generator():
+                    delta_count += 1
+                    yield __event
+                span.set_attribute("delta_count", delta_count)
+                span.set_attribute("function_call", function_call)
 
             if function_call:
                 calls = json.loads(function_call_content)
