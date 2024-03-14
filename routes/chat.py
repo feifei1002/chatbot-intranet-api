@@ -8,7 +8,8 @@ from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
 from routes.authentication import get_current_user_optional, AuthenticatedUser
-from utils import intranet_search_tool, uni_website_search_tool, timetable_tool
+from utils import intranet_search_tool, uni_website_search_tool, \
+    timetable_tool, learning_central_tool
 from utils.models import ConversationMessage
 
 router = APIRouter()
@@ -37,7 +38,10 @@ async def chat(
 ):
     tools = ["Intranet Search", "Search University Website"]
 
-    authenticated_tools = ["Get Timetable"]
+    authenticated_tools = [
+        "Get Timetable",
+        "Get Learning Central Stream"
+    ]
 
     if current_user:
         tools.extend(authenticated_tools)
@@ -116,6 +120,16 @@ async def chat(
             "function": {
                 "name": "get_timetable",
                 "description": "Get the user's timetable",
+            },
+        },
+        # Learning Central tool
+        {
+            "type": "function",
+            "function": {
+                "name": "get_learning_central_stream",
+                "description": "Get the user's learning central stream for information "
+                               "on course assignments, content, announcements, and "
+                               "grades",
             },
         }
     ]
@@ -255,6 +269,12 @@ async def chat(
                                 current_user.username,
                                 current_user.cookies
                             )
+                        case "get_learning_central_stream":
+                            result = await learning_central_tool \
+                                .get_learning_central_stream(
+                                    current_user.username,
+                                    current_user.cookies
+                                )
                         case _:
                             raise ValueError(
                                 f"Assistant called unknown function: {name}"
