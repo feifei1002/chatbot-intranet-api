@@ -294,7 +294,10 @@ async def chat(
                         # Set the attributes for the span
                         span.set_attribute("tool_name", name)
                         span.set_attribute("tool_call_id", call.get("id"))
-                        span.set_attribute("tool_call_arguments", json.dumps(call.get("arguments")))
+                        span.set_attribute(
+                            "tool_call_arguments",
+                            json.dumps(call.get("arguments"))
+                        )
 
                     # Add the function call as a message in the conversation
                     messages.append({
