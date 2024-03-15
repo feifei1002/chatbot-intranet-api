@@ -265,28 +265,36 @@ async def chat(
 
                 for call in calls:
                     name = call["name"]
-                    match name:
-                        case "search_intranet_documents":
-                            result = await intranet_search_tool \
-                                .search_intranet(**call["arguments"])
-                        case "search_uni_website":
-                            result = await uni_website_search_tool \
-                                .search_uni_website(**call["arguments"])
-                        case "get_timetable":
-                            result = await timetable_tool.get_timetable(
-                                current_user.username,
-                                current_user.cookies
-                            )
-                        case "get_learning_central_stream":
-                            result = await learning_central_tool \
-                                .get_learning_central_stream(
+                    # Trace the time it takes to call the tool
+                    with chat_tracer.start_span("tool_call") as span:
+                        # Match the tool name to the tool
+                        match name:
+                            case "search_intranet_documents":
+                                result = await intranet_search_tool \
+                                    .search_intranet(**call["arguments"])
+                            case "search_uni_website":
+                                result = await uni_website_search_tool \
+                                    .search_uni_website(**call["arguments"])
+                            case "get_timetable":
+                                result = await timetable_tool.get_timetable(
                                     current_user.username,
                                     current_user.cookies
                                 )
-                        case _:
-                            raise ValueError(
-                                f"Assistant called unknown function: {name}"
-                            )
+                            case "get_learning_central_stream":
+                                result = await learning_central_tool \
+                                    .get_learning_central_stream(
+                                        current_user.username,
+                                        current_user.cookies
+                                    )
+                            case _:
+                                raise ValueError(
+                                    f"Assistant called unknown function: {name}"
+                                )
+                        print("Args: ", call["arguments"])
+                        # Set the attributes for the span
+                        span.set_attribute("tool_name", name)
+                        span.set_attribute("tool_call_id", call.get("id"))
+                        span.set_attribute("tool_call_arguments", json.dumps(call.get("arguments")))
 
                     # Add the function call as a message in the conversation
                     messages.append({
