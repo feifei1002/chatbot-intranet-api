@@ -30,10 +30,17 @@ async def duckduckgo_search(query) -> list[str]:
 
 
 async def get_text(link: str) -> Union[Document, None]:
+    """
+    Get the text from the given link
+    :param link: the link to get the text from
+    :return: the markdown text from the link
+    """
     resp = await client.get(link)
     if resp.status_code == 200:
         try:
             doc = BeautifulSoup(resp.text, "html.parser")
+
+            # Remove unwanted elements
             for nav in doc.find_all("nav"):
                 nav.decompose()
             for footer in doc.find_all("footer"):
@@ -52,6 +59,7 @@ async def get_text(link: str) -> Union[Document, None]:
                         element.decompose()
                         break
 
+            # Convert the HTML to markdown
             text = html2text.html2text(str(doc.prettify("utf-8"), encoding='utf-8'))
 
             return Document(
