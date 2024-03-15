@@ -1,13 +1,15 @@
 import json
 from datetime import date
+from typing import Annotated, Union
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from openai import AsyncOpenAI
 from opentelemetry import trace
 from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
-from utils import intranet_search_tool, uni_website_search_tool
+from routes.authentication import get_current_user_optional, AuthenticatedUser
+from utils import intranet_search_tool, uni_website_search_tool, timetable_tool
 from utils.models import ConversationMessage
 
 router = APIRouter()
@@ -27,14 +29,27 @@ client = AsyncOpenAI()
 
 
 @router.post("/chat")
-async def chat(chat_request: ChatRequest):
+async def chat(
+        chat_request: ChatRequest,
+        current_user: Annotated[
+            Union[AuthenticatedUser, None],
+            Depends(get_current_user_optional)
+        ]
+):
+    tools = ["Intranet Search", "Search University Website"]
+
+    authenticated_tools = ["Get Timetable"]
+
+    if current_user:
+        tools.extend(authenticated_tools)
+
     messages = [
         {
             "role": "system",
             "content": "You're an assistant that helps university students at Cardiff University."  # noqa
                        " You can help me by answering my questions."
                        " You can also ask me questions."
-                       "\nYou can use the following tools when a user asks a query: Intranet search, Search University Website"  # noqa
+                       f"\nYou can use the following tools when a user asks a query: {', '.join(tools)}"  # noqa
                        "\nYou must use the responses from the tool to answer the student's query."  # noqa
                        "\nWhen the user is asking a follow-up question, you need to use the previous messages to form the context of the new question for tools."  # noqa
                        f"\nCurrent Date: {date.today()}"
@@ -94,6 +109,20 @@ async def chat(chat_request: ChatRequest):
             },
         }
     ]
+
+    authenticated_tools = [
+        # Timetable tool
+        {
+            "type": "function",
+            "function": {
+                "name": "get_timetable",
+                "description": "Get the user's timetable",
+            },
+        }
+    ]
+
+    if current_user:
+        tools.extend(authenticated_tools)
 
     chat_tracer = trace.get_tracer("chat_api")
 
@@ -229,6 +258,11 @@ async def chat(chat_request: ChatRequest):
                         case "search_uni_website":
                             result = await uni_website_search_tool \
                                 .search_uni_website(**call["arguments"])
+                        case "get_timetable":
+                            result = await timetable_tool.get_timetable(
+                                current_user.username,
+                                current_user.cookies
+                            )
                         case _:
                             raise ValueError(
                                 f"Assistant called unknown function: {name}"

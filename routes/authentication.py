@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from typing import Union
 
 from fastapi import APIRouter, Depends
 from fastapi import HTTPException, status
@@ -26,7 +27,7 @@ class Token(BaseModel):
 
 router = APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
 def create_access_token(data: dict):
@@ -72,6 +73,9 @@ async def session(token: str = Depends(oauth2_scheme)):
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    if not token:
+        raise credentials_exception
+
     try:
         # Decode the JWT token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -94,6 +98,44 @@ async def session(token: str = Depends(oauth2_scheme)):
                     datetime.utcnow() + timedelta(minutes=5)
             ).timestamp()
         }
+    except JWTError:
+        # Someone is tampering with the token
+        raise credentials_exception
+
+
+class AuthenticatedUser(BaseModel):
+    username: str
+    cookies: dict
+
+
+async def get_current_user_optional(
+        token: str = Depends(oauth2_scheme)
+) -> Union[AuthenticatedUser, None]:
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if token is None:
+        return None
+
+    try:
+        # Decode the JWT token
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+
+        # Check if the jwt contains a username
+        # Even though it's technically impossible
+        # Due to the JWT signing
+        if username is None:
+            raise credentials_exception
+
+        # Check if the token expired
+        if payload.get("exp") < datetime.utcnow().timestamp():
+            raise credentials_exception
+
+        return AuthenticatedUser(username=username, cookies=payload.get("cookies"))
     except JWTError:
         # Someone is tampering with the token
         raise credentials_exception
