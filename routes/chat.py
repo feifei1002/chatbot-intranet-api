@@ -249,13 +249,16 @@ async def chat(
         while function_call:
             function_call = False
             # We keep generating, until the assistant stops calling tools
-            with chat_tracer.start_span("completion_response") as span:
-                delta_count = 0
-                async for __event in inner_generator():
-                    delta_count += 1
-                    yield __event
-                span.set_attribute("delta_count", delta_count)
-                span.set_attribute("function_call", function_call)
+            with chat_tracer.start_span("total_response_time") as total_span:
+                with chat_tracer.start_span("completion_response") as span:
+                    delta_count = 0
+                    async for __event in inner_generator():
+                        delta_count += 1
+                        yield __event
+                    span.set_attribute("delta_count", delta_count)
+                    span.set_attribute("function_call", function_call)
+                total_span.set_attribute("delta_count", delta_count)
+                total_span.set_attribute("function_call", function_call)
 
             if function_call:
                 calls = json.loads(function_call_content)
