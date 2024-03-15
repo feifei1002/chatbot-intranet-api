@@ -10,4 +10,5 @@ if connection_uri is None:
 pool = AsyncConnectionPool(
     conninfo=connection_uri,
     open=False,
+    check=AsyncConnectionPool.check_connection,
 )
