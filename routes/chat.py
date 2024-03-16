@@ -246,65 +246,75 @@ async def chat(
 
                 function_call_content = json.dumps(function_calls_list)
 
-        while function_call:
-            function_call = False
-            # We keep generating, until the assistant stops calling tools
-            with chat_tracer.start_span("completion_response") as span:
-                delta_count = 0
-                async for __event in inner_generator():
-                    delta_count += 1
-                    yield __event
-                span.set_attribute("delta_count", delta_count)
-                span.set_attribute("function_call", function_call)
+        with chat_tracer.start_span("chat_response") as resp_span:
+            completion_count = 0
+            tool_calls = 0
+            tools_called = []
+            while function_call:
+                completion_count += 1
+                function_call = False
+                # We keep generating, until the assistant stops calling tools
+                with chat_tracer.start_span("completion_response") as span:
+                    delta_count = 0
+                    async for __event in inner_generator():
+                        delta_count += 1
+                        yield __event
+                    span.set_attribute("delta_count", delta_count)
+                    span.set_attribute("function_call", function_call)
 
-            if function_call:
-                calls = json.loads(function_call_content)
-                # Reset function call content,
-                # in case assistant wants to call functions again
-                function_call_content = ""
+                if function_call:
+                    calls = json.loads(function_call_content)
+                    # Reset function call content,
+                    # in case assistant wants to call functions again
+                    function_call_content = ""
 
-                for call in calls:
-                    name = call["name"]
-                    # Trace the time it takes to call the tool
-                    with chat_tracer.start_span("tool_call") as span:
-                        # Match the tool name to the tool
-                        match name:
-                            case "search_intranet_documents":
-                                result = await intranet_search_tool \
-                                    .search_intranet(**call["arguments"])
-                            case "search_uni_website":
-                                result = await uni_website_search_tool \
-                                    .search_uni_website(**call["arguments"])
-                            case "get_timetable":
-                                result = await timetable_tool.get_timetable(
-                                    current_user.username,
-                                    current_user.cookies
-                                )
-                            case "get_learning_central_stream":
-                                result = await learning_central_tool \
-                                    .get_learning_central_stream(
+                    for call in calls:
+                        tool_calls += 1
+                        name = call["name"]
+                        tools_called.append(name)
+                        # Trace the time it takes to call the tool
+                        with chat_tracer.start_span("tool_call") as span:
+                            # Match the tool name to the tool
+                            match name:
+                                case "search_intranet_documents":
+                                    result = await intranet_search_tool \
+                                        .search_intranet(**call["arguments"])
+                                case "search_uni_website":
+                                    result = await uni_website_search_tool \
+                                        .search_uni_website(**call["arguments"])
+                                case "get_timetable":
+                                    result = await timetable_tool.get_timetable(
                                         current_user.username,
                                         current_user.cookies
                                     )
-                            case _:
-                                raise ValueError(
-                                    f"Assistant called unknown function: {name}"
-                                )
-                        print("Args: ", call["arguments"])
-                        # Set the attributes for the span
-                        span.set_attribute("tool_name", name)
-                        span.set_attribute("tool_call_id", call.get("id"))
-                        span.set_attribute(
-                            "tool_call_arguments",
-                            json.dumps(call.get("arguments"))
-                        )
+                                case "get_learning_central_stream":
+                                    result = await learning_central_tool \
+                                        .get_learning_central_stream(
+                                        current_user.username,
+                                        current_user.cookies
+                                    )
+                                case _:
+                                    raise ValueError(
+                                        f"Assistant called unknown function: {name}"
+                                    )
+                            # Set the attributes for the span
+                            span.set_attribute("tool_name", name)
+                            span.set_attribute("tool_call_id", call.get("id"))
+                            span.set_attribute(
+                                "tool_call_arguments",
+                                json.dumps(call.get("arguments"))
+                            )
 
-                    # Add the function call as a message in the conversation
-                    messages.append({
-                        "tool_call_id": call.get("id"),
-                        "role": "tool",
-                        "name": name,
-                        "content": result
-                    })
+                        # Add the function call as a message in the conversation
+                        messages.append({
+                            "tool_call_id": call.get("id"),
+                            "role": "tool",
+                            "name": name,
+                            "content": result
+                        })
+
+            resp_span.set_attribute("completion_count", completion_count)
+            resp_span.set_attribute("tool_calls", tool_calls)
+            resp_span.set_attribute("tools_called", tools_called)
 
     return EventSourceResponse(event_generator())
