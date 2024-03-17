@@ -6,7 +6,7 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
-from utils import intranet_search_tool, uni_website_search_tool
+from utils import intranet_search_tool, uni_website_search_tool, society_scrape_tool
 from utils.models import ConversationMessage
 
 router = APIRouter()
@@ -92,6 +92,7 @@ async def chat(chat_request: ChatRequest):
                 },
             },
         },
+        # Societies tool
         {
             "type": "function",
             "function": {
@@ -238,6 +239,9 @@ async def chat(chat_request: ChatRequest):
                         case "search_uni_website":
                             result = await uni_website_search_tool \
                                 .search_uni_website(**call["arguments"])
+                        case "search_society":
+                            result = await society_scrape_tool \
+                                .society_scrape_tool(**call["arguments"])
                         case _:
                             raise ValueError(
                                 f"Assistant called unknown function: {name}"
