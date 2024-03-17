@@ -112,43 +112,17 @@ async def chat(
                 },
             },
         },
-        # Societies tool
         {
             "type": "function",
             "function": {
-                "name": "search_society",
-                "description": "Search information about Cardiff Univeristy Societies,"
-                               " to help answer the user's query",
-                # noqa
+                "name": "society_queries",
+                "description": "Search information about Cardiff Univeristy Societies, to help answer the user's query",  # noqa
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The question to search for about "
-                                           "the societies on the Student Union Website",
-                            # noqa
-                        }
-                    },
-                    "required": ["query"],
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "event_queries",
-                "description": "Search information about Cardiff Univeristy Events, "
-                               "to help answer the user's query",
-                # noqa
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "The question to search for about the "
-                                           "events on the Student Union Website",
-                            # noqa
+                            "description": "The question to search for about the societies on the Student Union Website",  # noqa
                         }
                     },
                     "required": ["query"],
