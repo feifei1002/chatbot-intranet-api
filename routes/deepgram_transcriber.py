@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request
 router = APIRouter()
 deepgram = DeepgramClient(os.getenv("DEEPGRAM_API_KEY"))
 
+
 @router.post("/transcribe")
 async def transcribe(request: Request):
     data = await request.body()
