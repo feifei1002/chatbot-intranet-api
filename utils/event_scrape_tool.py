@@ -19,7 +19,7 @@ from scripts.event_scraping import scrape_events
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 
-async def search_events(query: str) -> str:
+async def event_scrape_tool(query: str) -> str:
     events_result = await scrape_events("https://www.cardiffstudents.com/activities/societies/events/")
     documents = []
     for event in events_result:
