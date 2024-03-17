@@ -129,6 +129,28 @@ async def chat(
                     "required": ["query"],
                 },
             },
+        },
+        # Events Tool
+        {
+            "type": "function",
+            "function": {
+                "name": "event_queries",
+                "description": "Search information about Cardiff Univeristy Events, "
+                               "to help answer the user's query",
+                # noqa
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The question to search for about the "
+                                           "events on the Student Union Website",
+                            # noqa
+                        }
+                    },
+                    "required": ["query"],
+                },
+            },
         }
     ]
 
