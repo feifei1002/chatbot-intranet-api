@@ -112,6 +112,7 @@ async def chat(
                 },
             },
         },
+        # Societies tool
         {
             "type": "function",
             "function": {
