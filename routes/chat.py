@@ -111,6 +111,23 @@ async def chat(
                     "required": ["query"],
                 },
             },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "society_queries",
+                "description": "Search information about Cardiff Univeristy Societies, to help answer the user's query",  # noqa
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The question to search for about the societies on the Student Union Website",  # noqa
+                        }
+                    },
+                    "required": ["query"],
+                },
+            },
         }
     ]
 
