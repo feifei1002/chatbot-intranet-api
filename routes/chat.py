@@ -11,6 +11,7 @@ from sse_starlette import EventSourceResponse
 from routes.authentication import get_current_user_optional, AuthenticatedUser
 from utils import intranet_search_tool, uni_website_search_tool, \
     timetable_tool, learning_central_tool
+from utils import intranet_search_tool, uni_website_search_tool, society_scrape_tool
 from utils.models import ConversationMessage
 
 router = APIRouter()
@@ -112,6 +113,7 @@ async def chat(
                 },
             },
         },
+        # Societies tool
         {
             "type": "function",
             "function": {
@@ -299,6 +301,9 @@ async def chat(
                                 case "search_uni_website":
                                     result = await uni_website_search_tool \
                                         .search_uni_website(**call["arguments"])
+                                case "search_society":
+                                    result = await society_scrape_tool \
+                                        .society_scrape_tool(**call["arguments"])
                                 case "get_timetable":
                                     result = await timetable_tool.get_timetable(
                                         current_user.username,
