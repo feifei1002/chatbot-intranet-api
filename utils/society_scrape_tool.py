@@ -81,4 +81,3 @@ async def society_scrape_tool(query: str) -> str:
     return json.dumps({
         "results": [result.get_content(MetadataMode.LLM) for result in results]
     })
-
