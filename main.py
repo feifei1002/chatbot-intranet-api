@@ -42,3 +42,4 @@ async def root():
     return {"message": "Hello World"}
 
 FastAPIInstrumentor.instrument_app(app)
+
