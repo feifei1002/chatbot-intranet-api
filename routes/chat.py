@@ -6,7 +6,8 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
-from utils import intranet_search_tool, uni_website_search_tool, society_scrape_tool
+from utils import (intranet_search_tool, uni_website_search_tool, society_scrape_tool,
+                   event_scrape_tool)
 from utils.models import ConversationMessage
 
 router = APIRouter()
@@ -33,7 +34,7 @@ async def chat(chat_request: ChatRequest):
             "content": "You're an assistant that helps university students at Cardiff University."  # noqa
                        " You can help me by answering my questions."
                        " You can also ask me questions."
-                       "\nYou can use the following tools when a user asks a query: Intranet search, Search University Website, Societies Information"  # noqa
+                       "\nYou can use the following tools when a user asks a query: Intranet search, Search University Website, Societies Information, Events Information"  # noqa
                        "\nYou must use the responses from the tool to answer the student's query." # noqa
                        "\nWhen the user is asking a follow-up question, you need to use the previous messages to form the context of the new question for tools."  # noqa
                        f"\nCurrent Date: {date.today()}"
@@ -104,6 +105,28 @@ async def chat(chat_request: ChatRequest):
                         "query": {
                             "type": "string",
                             "description": "The question to search for about the societies on the Student Union Website",  # noqa
+                        }
+                    },
+                    "required": ["query"],
+                },
+            },
+        },
+        # Events Tool
+        {
+            "type": "function",
+            "function": {
+                "name": "event_queries",
+                "description": "Search information about Cardiff Univeristy Events, "
+                               "to help answer the user's query",
+                # noqa
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The question to search for about the "
+                                           "events on the Student Union Website",
+                            # noqa
                         }
                     },
                     "required": ["query"],
@@ -242,6 +265,9 @@ async def chat(chat_request: ChatRequest):
                         case "search_society":
                             result = await society_scrape_tool \
                                 .society_scrape_tool(**call["arguments"])
+                        case "search_event":
+                            result = await event_scrape_tool \
+                            .event_scrape_tool(**call["arguments"])
                         case _:
                             raise ValueError(
                                 f"Assistant called unknown function: {name}"
