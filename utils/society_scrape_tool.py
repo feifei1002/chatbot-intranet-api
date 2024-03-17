@@ -46,3 +46,4 @@ async def search_society_tool(query: str) -> str:
     return json.dumps({
         "results": [result.get_content(MetadataMode.LLM) for result in results]
     })
+
