@@ -41,5 +41,5 @@ app.include_router(suggested_questions.router)
 async def root():
     return {"message": "Hello World"}
 
-FastAPIInstrumentor.instrument_app(app)
 
+FastAPIInstrumentor.instrument_app(app)
