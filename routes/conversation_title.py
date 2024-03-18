@@ -1,6 +1,6 @@
 import os
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 
@@ -63,5 +63,4 @@ async def create_title_from_conversation():
         }
     )
 
-    # output title for testing
-    print("title is: ", resp.choices[0].message.content)
+    return Response(content=resp.choices[0].message.content, media_type='application/json')
