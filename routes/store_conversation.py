@@ -1,6 +1,6 @@
 import os
 from fastapi.responses import JSONResponse
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from utils.db import pool
@@ -18,6 +18,29 @@ __allowed_roles = ["user", "assistant"]
 
 class ChatHistory(BaseModel):
     chat_messages: list[ConversationMessage]
+
+
+async def create_conversation_title(message_history: list[dict]):
+    messages = message_history.copy()
+
+    # adds question prompt to ask for suggestions
+    messages.append(
+        {"role": "user",
+         "content": "Based on the conversation so far, what is a title to summarise this conversation? "  # noqa
+                    "Make sure to format in a JSON object with an array in the key 'title'."})  # noqa
+
+    # gets response after asking openapi question
+    resp = await client.chat.completions.create(
+        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        messages=messages,
+        response_format={
+            "type": "json_object"
+        }
+    )
+
+    print("title is ", resp.choices[0].message.content)
+
+    return resp.choices[0].message.content
 
 
 # function to get conversation history
@@ -52,4 +75,6 @@ async def store_conversation(message_history: list):
 async def handle_store_conversation(messages: ChatHistory):
     message_history = await get_conversation(messages)
     await store_conversation(message_history)
-    return JSONResponse(content={"message": "Conversation stored successfully"})
+    message_history_title = await create_conversation_title(message_history)
+    # return JSONResponse(content={"message": "Conversation stored successfully"})
+    return Response(content=message_history_title, media_type='application/json')
