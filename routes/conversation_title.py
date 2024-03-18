@@ -63,4 +63,6 @@ async def create_title_from_conversation():
         }
     )
 
-    return Response(content=resp.choices[0].message.content, media_type='application/json')
+    title = resp.choices[0].message.content
+
+    return Response(content=title, media_type='application/json')
