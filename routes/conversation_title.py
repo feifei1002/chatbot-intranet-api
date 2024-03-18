@@ -1,6 +1,6 @@
 import os
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, HTTPException
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 
@@ -24,7 +24,7 @@ class ChatHistory(BaseModel):
 # function to create a title based on the conversation history,
 # used to store previous conversations on the left pane of the chatbot page
 @router.get("/conversation_title")
-async def create_title_from_conversation():
+async def create_title_from_conversation(messages: ChatHistory):
     # test conversation to check title creation works
     message_history = [
         {"role": "user",
@@ -37,16 +37,16 @@ async def create_title_from_conversation():
          "content": "Established in 1825."}
     ]
 
-    # # adds each message to the message history, when correct role (user or assistant)
-    # for message in messages.chat_messages:
-    #     if message.role in __allowed_roles:
-    #         message_history.append({
-    #             "role": message.role,
-    #             "content": message.content
-    #         })
-    #     else:
-    #         http exception because invalid role being sent should result in 404 error
-    #         raise HTTPException(status_code=404, detail="Invalid role sent")
+    # adds each message to the message history, when correct role (user or assistant)
+    for message in messages.chat_messages:
+        if message.role in __allowed_roles:
+            message_history.append({
+                "role": message.role,
+                "content": message.content
+            })
+        else:
+            # http exception because invalid role being sent should result in 404 error
+            raise HTTPException(status_code=404, detail="Invalid role sent")
 
     # adds question prompt to ask for suggestions
     message_history.append(
