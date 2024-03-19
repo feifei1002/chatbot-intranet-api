@@ -1,12 +1,24 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routes import chat, suggested_questions, text_to_speech, deepgram_transcriber
 
 from routes import authentication
+from utils import db
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        await db.pool.open()
+        yield
+    finally:
+        await db.pool.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
