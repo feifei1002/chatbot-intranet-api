@@ -31,7 +31,8 @@ async def search_intranet(query: str) -> str:
     embed_model = OpenAIEmbedding(model="text-embedding-3-large")
 
     # Initialize VectorStoreIndex asynchronously
-    index = VectorStoreIndex.from_vector_store(vector_store=store, embed_model=embed_model)
+    index = VectorStoreIndex.from_vector_store(
+        vector_store=store, embed_model=embed_model)
 
     # Retrieve top 100 results asynchronously
     retriever = index.as_retriever(similarity_top_k=100)

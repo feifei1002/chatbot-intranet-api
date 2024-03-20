@@ -39,7 +39,8 @@ async def search_uni_website(query: str) -> str:
     reranker = CohereRerank()
 
     # Rerank the nodes asynchronously
-    reranked_results = await asyncio.create_task(reranker.postprocess_nodes(nodes=nodes, query_str=query))[:3]
+    reranked_results = await asyncio.create_task(reranker.postprocess_nodes(
+        nodes=nodes, query_str=query))[:3]
 
     # return the results in json format to pass to the chat endpoint
     return json.dumps({
