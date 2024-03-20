@@ -15,12 +15,13 @@ async def transcribe(request: Request):
         "mimetype": "audio/ogg"
     }
 
-    resp: PrerecordedResponse = await deepgram.listen.asyncprerecorded.v("1").transcribe_file(
+    resp: PrerecordedResponse = await (deepgram.listen
+    .asyncprerecorded.v("1").transcribe_file(
         source,
         PrerecordedOptions(
             model="nova-2"
         ),
-    )
+    ))
 
     return {
         "text": resp.results.channels[0].alternatives[0].transcript

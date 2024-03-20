@@ -3,6 +3,7 @@ from main import app
 
 client = TestClient(app)
 
+
 def test_transcription():
     with open('../transcription_test.wav', 'rb') as file:
         audio_blob = file.read()
