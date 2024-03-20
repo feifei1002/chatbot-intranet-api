@@ -9,7 +9,7 @@
             <column name="conversation_id" type="int">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="conversation_title" type="varchar(20)">
+            <column name="conversation_title" type="varchar(200)">
                 <constraints nullable="false"/>
             </column>
             <column name="username" type="varchar(20)">

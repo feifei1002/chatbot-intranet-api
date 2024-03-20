@@ -1,5 +1,4 @@
 import os
-from fastapi.responses import JSONResponse
 from fastapi import APIRouter, HTTPException, Response
 from openai import AsyncOpenAI
 from pydantic import BaseModel
@@ -71,10 +70,23 @@ async def store_conversation(message_history: list):
                 )
 
 
+async def store_conversation_title(conversation_title: str, username: str):
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "INSERT INTO conversations (conversation_title, username) VALUES (%s, %s)",
+                # Only extract the title, remove everything before index 21
+                # and the last 7 indices of the title
+                (conversation_title[21:-7], username)
+            )
+
+
 @router.post("/store-conversation")
 async def handle_store_conversation(messages: ChatHistory):
+    username = "C21234567"
     message_history = await get_conversation(messages)
     await store_conversation(message_history)
     message_history_title = await create_conversation_title(message_history)
+    await store_conversation_title(message_history_title, username)
     # return JSONResponse(content={"message": "Conversation stored successfully"})
     return Response(content=message_history_title, media_type='application/json')
