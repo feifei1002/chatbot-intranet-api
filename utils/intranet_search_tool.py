@@ -4,6 +4,7 @@ import os
 from llama_index.core import VectorStoreIndex
 from llama_index.core.schema import MetadataMode
 from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.postprocessor.cohere_rerank import CohereRerank
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import AsyncQdrantClient
 
@@ -33,9 +34,15 @@ async def search_intranet(query: str) -> str:
     Search the intranet for the given query
     """
 
-    retriever = index.as_retriever(similarity_top_k=3)
+    retriever = index.as_retriever(similarity_top_k=100)
 
     results = await retriever.aretrieve(query)
+
+    # Reranking
+    reranker = CohereRerank()
+    results = reranker.postprocess_nodes(nodes=results, query_str=query)[:3]
+
+    # More code to allow it to work with Async - Which is also only 2 lines of code.
 
     return json.dumps({
         "results": [result.get_content(MetadataMode.LLM) for result in results]

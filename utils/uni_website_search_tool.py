@@ -4,8 +4,9 @@ import os
 from llama_index.core import VectorStoreIndex
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.schema import MetadataMode
+from llama_index.core.schema import MetadataMode, NodeWithScore
 from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.postprocessor.cohere_rerank import CohereRerank
 
 from utils.scrape_uni_website import duckduckgo_search, transform_data
 
@@ -26,17 +27,19 @@ async def search_uni_website(query: str) -> str:
     pipeline = IngestionPipeline(
         transformations=[
             splitter,
-            embed_model,
         ],
         documents=documents,
     )
-    nodes = await pipeline.arun(show_progress=True)
+    nodes = await pipeline.arun(show_progress=True)[:100]
 
-    # embed each node
-    index = VectorStoreIndex(embed_model=embed_model, nodes=nodes)
-    retriever = index.as_retriever(similarity_top_k=3)
-    results = await retriever.aretrieve(query)
-    print(results)
+    # Convert to NodeWithScore
+    nodes = [NodeWithScore(node=node) for node in nodes]
+
+    # Reranker
+    reranker = CohereRerank()
+    results = reranker.postprocess_nodes(nodes=nodes, query_str=query)[:3]
+
+    # Add 2 lines of code so that it works Async
 
     # return the results in json format to pass to the chat endpoint
     return json.dumps({
