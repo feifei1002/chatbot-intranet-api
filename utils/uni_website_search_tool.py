@@ -1,6 +1,6 @@
 import json
 import os
-
+import asyncio
 
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
@@ -19,9 +19,9 @@ async def search_uni_website(query: str) -> str:
     """
     search_links = await duckduckgo_search(query)
     documents = await transform_data(search_links)
-    OpenAIEmbedding(
-        model="text-embedding-3-large"
-    )
+
+    # Initialize OpenAI embedding model asynchronously
+    await asyncio.create_task(OpenAIEmbedding(model="text-embedding-3-large"))
 
     splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=50)
     pipeline = IngestionPipeline(
@@ -35,13 +35,13 @@ async def search_uni_website(query: str) -> str:
     # Convert to NodeWithScore
     nodes = [NodeWithScore(node=node) for node in nodes]
 
-    # Reranker
+    # Initialize the CohereRerank instance
     reranker = CohereRerank()
-    results = reranker.postprocess_nodes(nodes=nodes, query_str=query)[:3]
 
-    # Add 2 lines of code so that it works Async
+    # Rerank the nodes asynchronously
+    reranked_results = await asyncio.create_task(reranker.postprocess_nodes(nodes=nodes, query_str=query))[:3]
 
     # return the results in json format to pass to the chat endpoint
     return json.dumps({
-        "results": [result.get_content(MetadataMode.LLM) for result in results]
+        "results": [result.get_content(MetadataMode.LLM) for result in reranked_results]
     })
