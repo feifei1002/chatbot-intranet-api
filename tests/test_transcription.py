@@ -7,7 +7,7 @@ client = TestClient(app)
 
 def test_transcription():
 
-    file_name = 'tests/transcription_test.wav'
+    file_name = 'gojo.wav'
     assert os.path.exists(file_name), f"File '{file_name}' does not exist."
 
     with open(file_name, 'rb') as file:
