@@ -1,11 +1,16 @@
 from fastapi.testclient import TestClient
 from main import app
+import os
 
 client = TestClient(app)
 
 
 def test_transcription():
-    with open('transcription_test.wav', 'rb') as file:
+
+    file_name = 'transcription_test.wav'
+    assert os.path.exists(file_name), f"File '{file_name}' does not exist."
+
+    with open(file_name, 'rb') as file:
         audio_blob = file.read()
 
     response = client.post(
