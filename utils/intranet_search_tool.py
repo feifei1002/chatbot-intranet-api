@@ -43,7 +43,8 @@ async def search_intranet(query: str) -> str:
     # Reranking
     reranker = CohereRerank()
     # Reranker asynchronously
-    results = await asyncio.to_thread(reranker.postprocess_nodes, nodes=results, query_str=query)
+    results = await (asyncio.to_thread(reranker.postprocess_nodes,
+                                       nodes=results, query_str=query))
     results = results[:3]
 
     return json.dumps({

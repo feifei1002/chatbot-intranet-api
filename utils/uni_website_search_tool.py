@@ -2,7 +2,6 @@ import json
 import os
 import asyncio
 
-
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import MetadataMode, NodeWithScore
@@ -39,7 +38,8 @@ async def search_uni_website(query: str) -> str:
     # Reranker
     reranker = CohereRerank()
     # Reranker asynchronously
-    results = await asyncio.to_thread(reranker.postprocess_nodes, nodes=nodes, query_str=query)
+    results = await asyncio.to_thread(reranker.postprocess_nodes,
+                                      nodes=nodes, query_str=query)
     results = results[:3]
 
     # return the results in json format to pass to the chat endpoint
