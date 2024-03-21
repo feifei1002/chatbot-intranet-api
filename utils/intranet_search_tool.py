@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 
@@ -7,6 +8,7 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.postprocessor.cohere_rerank import CohereRerank
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import AsyncQdrantClient
+
 
 # throw Exception if the environment variables are not set
 if not os.environ.get("QDRANT_URL"):
@@ -40,9 +42,9 @@ async def search_intranet(query: str) -> str:
 
     # Reranking
     reranker = CohereRerank()
-    results = reranker.postprocess_nodes(nodes=results, query_str=query)[:3]
-
-    # More code to allow it to work with Async - Which is also only 2 lines of code.
+    # Reranker asynchronously
+    results = await asyncio.to_thread(reranker.postprocess_nodes, nodes=results, query_str=query)
+    results = results[:3]
 
     return json.dumps({
         "results": [result.get_content(MetadataMode.LLM) for result in results]

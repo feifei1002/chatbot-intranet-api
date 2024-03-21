@@ -1,5 +1,6 @@
 import json
 import os
+import asyncio
 
 
 from llama_index.core.ingestion import IngestionPipeline
@@ -37,9 +38,9 @@ async def search_uni_website(query: str) -> str:
 
     # Reranker
     reranker = CohereRerank()
-    results = reranker.postprocess_nodes(nodes=nodes, query_str=query)[:3]
-
-    # Add 2 lines of code so that it works Async
+    # Reranker asynchronously
+    results = await asyncio.to_thread(reranker.postprocess_nodes, nodes=nodes, query_str=query)
+    results = results[:3]
 
     # return the results in json format to pass to the chat endpoint
     return json.dumps({
