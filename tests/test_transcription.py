@@ -6,9 +6,7 @@ client = TestClient(app)
 
 
 def test_transcription():
-    file_name = '../gojo.wav'
-    print("Current directory:", os.getcwd())
-    print("Files in parent directory:", os.listdir('..'))
+    file_name = 'gojo.wav'
     assert os.path.exists(file_name), f"File '{file_name}' does not exist."
 
     with open(file_name, 'rb') as file:
@@ -16,7 +14,7 @@ def test_transcription():
 
     response = client.post(
         "/transcribe",
-        data={audio_blob},
+        content=audio_blob,
         headers={'Content-Type': 'audio/wav'}
     )
     assert response.status_code == 200
