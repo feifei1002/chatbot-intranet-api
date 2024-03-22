@@ -42,18 +42,13 @@ async def society_scrape_tool(query: str) -> str:
     splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
-    # Create Qdrant clients
-    client = QdrantClient(
-        url=os.environ.get("QDRANT_URL"),
-        api_key=os.environ.get("QDRANT_API_KEY")
-    )
     aclient = AsyncQdrantClient(
         url=os.environ.get("QDRANT_URL"),
         api_key=os.environ.get("QDRANT_API_KEY")
     )
 
     # Create Qdrant vector store
-    store = QdrantVectorStore("societies", client=client, aclient=aclient)
+    store = QdrantVectorStore("societies", aclient=aclient)
 
     # Define ingestion pipeline
     pipeline = IngestionPipeline(

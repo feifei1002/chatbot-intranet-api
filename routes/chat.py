@@ -35,7 +35,7 @@ async def chat(chat_request: ChatRequest):
                        " You can help me by answering my questions."
                        " You can also ask me questions."
                        "\nYou can use the following tools when a user asks a query: Intranet search, Search University Website, Societies Information, Events Information"  # noqa
-                       "\nYou must use the responses from the tool to answer the student's query." # noqa
+                       "\nYou must use the responses from the tool to answer the student's query."  # noqa
                        "\nWhen the user is asking a follow-up question, you need to use the previous messages to form the context of the new question for tools."  # noqa
                        f"\nCurrent Date: {date.today()}"
         }
@@ -62,13 +62,13 @@ async def chat(chat_request: ChatRequest):
             "type": "function",
             "function": {
                 "name": "search_intranet_documents",
-                "description": "Search the intranet's documents for a query, to help answer the user's query", # noqa
+                "description": "Search the intranet's documents for a query, to help answer the user's query",  # noqa
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The question to search for in the intranet's documents", # noqa
+                            "description": "The question to search for in the intranet's documents",  # noqa
                         }
                     },
                     "required": ["query"],
@@ -97,14 +97,16 @@ async def chat(chat_request: ChatRequest):
         {
             "type": "function",
             "function": {
-                "name": "society_queries",
-                "description": "Search information about Cardiff Univeristy Societies, to help answer the user's query",  # noqa
+                "name": "search_society",
+                "description": "Search information about Cardiff Univeristy Societies, to help answer the user's query",
+                # noqa
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The question to search for about the societies on the Student Union Website",  # noqa
+                            "description": "The question to search for about the societies on the Student Union Website",
+                            # noqa
                         }
                     },
                     "required": ["query"],
@@ -115,7 +117,7 @@ async def chat(chat_request: ChatRequest):
         {
             "type": "function",
             "function": {
-                "name": "event_queries",
+                "name": "search_event",
                 "description": "Search information about Cardiff Univeristy Events, "
                                "to help answer the user's query",
                 # noqa
@@ -267,7 +269,7 @@ async def chat(chat_request: ChatRequest):
                                 .society_scrape_tool(**call["arguments"])
                         case "search_event":
                             result = await event_scrape_tool \
-                            .event_scrape_tool(**call["arguments"])
+                                .event_scrape_tool(**call["arguments"])
                         case _:
                             raise ValueError(
                                 f"Assistant called unknown function: {name}"
