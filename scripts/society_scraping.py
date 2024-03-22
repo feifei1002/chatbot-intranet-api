@@ -32,7 +32,7 @@ async def scrape_content(url):
         response = await client.get(url)
         soup = BeautifulSoup(response.text, 'html.parser')
 
-    soc_title = soup.find('h1')
+    soc_title = soup.find('#main-content\ container > div > div.flex.mb-1\.5.mslwidget.p-10.rounded.text-union-pink.font-union-bold.text-xl > div > ul > li > a')
     if soc_title:
         society_name = soc_title.get_text(strip=True)
     else:

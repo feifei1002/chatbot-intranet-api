@@ -10,7 +10,7 @@ from sse_starlette import EventSourceResponse
 
 from routes.authentication import get_current_user_optional, AuthenticatedUser
 from utils import intranet_search_tool, uni_website_search_tool, \
-    timetable_tool, learning_central_tool
+    timetable_tool, learning_central_tool, event_scrape_tool
 from utils import intranet_search_tool, uni_website_search_tool, society_scrape_tool
 from utils.models import ConversationMessage
 
@@ -117,14 +117,37 @@ async def chat(
         {
             "type": "function",
             "function": {
-                "name": "society_queries",
-                "description": "Search information about Cardiff Univeristy Societies, to help answer the user's query",  # noqa
+                "name": "search_society",
+                "description": "Search information about Cardiff Univeristy Societies, to help answer the user's query",
+                # noqa
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The question to search for about the societies on the Student Union Website",  # noqa
+                            "description": "The question to search for about the societies on the Student Union Website",
+                            # noqa
+                        }
+                    },
+                    "required": ["query"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "event_queries",
+                "description": "Search information about Cardiff Univeristy Events, "
+                               "to help answer the user's query",
+                # noqa
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The question to search for about the "
+                                           "events on the Student Union Website",
+                            # noqa
                         }
                     },
                     "required": ["query"],
@@ -304,6 +327,9 @@ async def chat(
                                 case "search_society":
                                     result = await society_scrape_tool \
                                         .society_scrape_tool(**call["arguments"])
+                                case "search_event":
+                                    result = await event_scrape_tool \
+                                        .event_scrape_tool(**call["arguments"])
                                 case "get_timetable":
                                     result = await timetable_tool.get_timetable(
                                         current_user.username,
