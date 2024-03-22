@@ -36,17 +36,13 @@ async def event_scrape_tool(query: str) -> str:
     embed_model.embed_batch_size = 50
 
     # Create Qdrant clients
-    client = QdrantClient(
-        url=os.environ.get("QDRANT_URL"),
-        api_key=os.environ.get("QDRANT_API_KEY")
-    )
     aclient = AsyncQdrantClient(
         url=os.environ.get("QDRANT_URL"),
         api_key=os.environ.get("QDRANT_API_KEY")
     )
 
     # Create Qdrant vector store
-    store = QdrantVectorStore("events", client=client, aclient=aclient)
+    store = QdrantVectorStore("events",  aclient=aclient)
 
     # Define ingestion pipeline
     pipeline = IngestionPipeline(
@@ -59,8 +55,7 @@ async def event_scrape_tool(query: str) -> str:
 
     # Create index from vector store
     index = VectorStoreIndex.from_vector_store(vector_store=store,
-                                               embed_model=embed_model,
-                                               use_async=True)
+                                               embed_model=embed_model)
 
     # Create retriever from index
     retriever = index.as_retriever(similarity_top_k=3)
