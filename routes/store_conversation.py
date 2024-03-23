@@ -1,7 +1,11 @@
 import os
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Depends
 from openai import AsyncOpenAI
 from pydantic import BaseModel
+from starlette.responses import JSONResponse
+
+from routes.authentication import AuthenticatedUser, get_current_user_optional
+from utils.auth_helper import UniCredentials
 from utils.db import pool
 from utils.models import ConversationMessage
 
@@ -13,6 +17,11 @@ client = AsyncOpenAI(api_key=TOGETHER_API_KEY,
                      base_url='https://api.together.xyz', )
 
 __allowed_roles = ["user", "assistant"]
+
+
+async def get_authenticated_user():
+    username = AuthenticatedUser.username
+    return username
 
 
 class ChatHistory(BaseModel):
@@ -57,6 +66,7 @@ async def get_conversation(messages: ChatHistory):
             # http exception because invalid role being sent should result in 404 error
             raise HTTPException(status_code=404, detail="Invalid role sent")
     print("History:", message_history)
+    # print("User:", messages.user.username)
     return message_history
 
 
@@ -82,8 +92,11 @@ async def store_conversation_title(conversation_title: str, username: str):
 
 
 @router.post("/store-conversation")
-async def handle_store_conversation(messages: ChatHistory):
-    username = "C21234567"
+async def handle_store_conversation(messages: ChatHistory,
+                                    user: AuthenticatedUser = Depends(get_current_user_optional)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Unauthorised")
+    username = user.username
     message_history = await get_conversation(messages)
     await store_conversation(message_history)
     message_history_title = await create_conversation_title(message_history)
