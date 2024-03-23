@@ -2,10 +2,7 @@ import os
 from fastapi import APIRouter, HTTPException, Response, Depends
 from openai import AsyncOpenAI
 from pydantic import BaseModel
-from starlette.responses import JSONResponse
-
 from routes.authentication import AuthenticatedUser, get_current_user_optional
-from utils.auth_helper import UniCredentials
 from utils.db import pool
 from utils.models import ConversationMessage
 
@@ -84,7 +81,8 @@ async def store_conversation_title(conversation_title: str, username: str):
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
             await cur.execute(
-                "INSERT INTO conversations (conversation_title, username) VALUES (%s, %s)",
+                "INSERT INTO conversations (conversation_title, username)"
+                " VALUES (%s, %s)",
                 # Only extract the title, remove everything before index 21
                 # and the last 7 indices of the title
                 (conversation_title[21:-7], username)
@@ -93,7 +91,8 @@ async def store_conversation_title(conversation_title: str, username: str):
 
 @router.post("/store-conversation")
 async def handle_store_conversation(messages: ChatHistory,
-                                    user: AuthenticatedUser = Depends(get_current_user_optional)):
+                                    user: AuthenticatedUser =
+                                    Depends(get_current_user_optional)):
     if user is None:
         raise HTTPException(status_code=401, detail="Unauthorised")
     username = user.username
