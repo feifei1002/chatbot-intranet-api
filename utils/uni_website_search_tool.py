@@ -5,7 +5,6 @@ import asyncio
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import MetadataMode, NodeWithScore
-from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.postprocessor.cohere_rerank import CohereRerank
 
 from utils.scrape_uni_website import duckduckgo_search, transform_data
@@ -19,9 +18,6 @@ async def search_uni_website(query: str) -> str:
     """
     search_links = await duckduckgo_search(query)
     documents = await transform_data(search_links)
-    OpenAIEmbedding(
-        model="text-embedding-3-large"
-    )
 
     splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=50)
     pipeline = IngestionPipeline(
