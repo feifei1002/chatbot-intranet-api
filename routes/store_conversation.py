@@ -24,6 +24,9 @@ async def get_authenticated_user():
 class ChatHistory(BaseModel):
     chat_messages: list[ConversationMessage]
 
+class ConversationTitle(BaseModel):
+    conversation_title: str
+
 
 async def create_conversation_title(message_history: list[dict]):
     messages = message_history.copy()
@@ -43,7 +46,7 @@ async def create_conversation_title(message_history: list[dict]):
         }
     )
 
-    print("title is ", resp.choices[0].message.content)
+    # print("title is ", resp.choices[0].message.content)
 
     return resp.choices[0].message.content
 
@@ -62,7 +65,7 @@ async def get_conversation(messages: ChatHistory):
         else:
             # http exception because invalid role being sent should result in 404 error
             raise HTTPException(status_code=404, detail="Invalid role sent")
-    print("History:", message_history)
+    # print("History:", message_history)
     # print("User:", messages.user.username)
     return message_history
 
@@ -89,7 +92,18 @@ async def store_conversation_title(conversation_title: str, username: str):
             )
 
 
-@router.post("/store-conversation")
+async def get_conversation_history_from_database(title: str, username: str):
+    # testing values are sent correctly
+    print("title is ", title)
+    print("username is ", username)
+
+    # select values from databases using title and username
+
+    # return conversation history
+
+
+
+@router.post("/store_conversation")
 async def handle_store_conversation(messages: ChatHistory,
                                     user: AuthenticatedUser =
                                     Depends(get_current_user_optional)):
@@ -102,3 +116,12 @@ async def handle_store_conversation(messages: ChatHistory,
     await store_conversation_title(message_history_title, username)
     # return JSONResponse(content={"message": "Conversation stored successfully"})
     return Response(content=message_history_title, media_type='application/json')
+
+@router.post("/get_conversation_from_title")
+async def handle_send_conversation(title: ConversationTitle,
+                                   user: AuthenticatedUser =
+                                   Depends(get_current_user_optional)):
+    username = user.username
+    conversation_title = title.conversation_title
+    await get_conversation_history_from_database(conversation_title, username)
+
