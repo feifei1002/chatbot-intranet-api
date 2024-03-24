@@ -9,7 +9,7 @@ from sse_starlette import EventSourceResponse
 
 from routes.authentication import get_current_user_optional, AuthenticatedUser
 from utils import intranet_search_tool, uni_website_search_tool, \
-    timetable_tool, learning_central_tool, society_scrape_tool,
+    timetable_tool, learning_central_tool, society_scrape_tool, \
                    event_scrape_tool
 from utils.models import ConversationMessage
 
