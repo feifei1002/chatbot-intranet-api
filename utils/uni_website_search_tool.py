@@ -1,12 +1,12 @@
 import json
 import os
-import asyncio
-from functools import partial
+
 from llama_index.core import VectorStoreIndex
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import MetadataMode
 from llama_index.embeddings.openai import OpenAIEmbedding
+
 from utils.scrape_uni_website import duckduckgo_search, transform_data
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -17,8 +17,7 @@ async def search_uni_website(query: str) -> str:
     Search the Cardiff University's website for the given query
     """
     search_links = await duckduckgo_search(query)
-    transform_data_partial = partial(transform_data, search_links)
-    documents = await asyncio.to_thread(transform_data_partial)
+    documents = await transform_data(search_links)
     embed_model = OpenAIEmbedding(
         model="text-embedding-3-large"
     )

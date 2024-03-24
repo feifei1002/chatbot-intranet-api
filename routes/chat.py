@@ -1,13 +1,16 @@
 import json
 from datetime import date
+from typing import Annotated, Union
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
-from utils import (intranet_search_tool, uni_website_search_tool, society_scrape_tool,
-                   event_scrape_tool)
+from routes.authentication import get_current_user_optional, AuthenticatedUser
+from utils import intranet_search_tool, uni_website_search_tool, \
+    timetable_tool, learning_central_tool, society_scrape_tool,
+                   event_scrape_tool
 from utils.models import ConversationMessage
 
 router = APIRouter()
@@ -27,14 +30,30 @@ client = AsyncOpenAI()
 
 
 @router.post("/chat")
-async def chat(chat_request: ChatRequest):
+async def chat(
+        chat_request: ChatRequest,
+        current_user: Annotated[
+            Union[AuthenticatedUser, None],
+            Depends(get_current_user_optional)
+        ]
+):
+    tools = ["Intranet Search", "Search University Website"]
+
+    authenticated_tools = [
+        "Get Timetable",
+        "Get Learning Central Stream"
+    ]
+
+    if current_user:
+        tools.extend(authenticated_tools)
+
     messages = [
         {
             "role": "system",
             "content": "You're an assistant that helps university students at Cardiff University."  # noqa
                        " You can help me by answering my questions."
                        " You can also ask me questions."
-                       "\nYou can use the following tools when a user asks a query: Intranet search, Search University Website, Societies Information, Events Information"  # noqa
+                       f"\nYou can use the following tools when a user asks a query: {', '.join(tools)}"  # noqa
                        "\nYou must use the responses from the tool to answer the student's query."  # noqa
                        "\nWhen the user is asking a follow-up question, you need to use the previous messages to form the context of the new question for tools."  # noqa
                        f"\nCurrent Date: {date.today()}"
@@ -136,6 +155,30 @@ async def chat(chat_request: ChatRequest):
             },
         }
     ]
+
+    authenticated_tools = [
+        # Timetable tool
+        {
+            "type": "function",
+            "function": {
+                "name": "get_timetable",
+                "description": "Get the user's timetable",
+            },
+        },
+        # Learning Central tool
+        {
+            "type": "function",
+            "function": {
+                "name": "get_learning_central_stream",
+                "description": "Get the user's learning central stream for information "
+                               "on course assignments, content, announcements, and "
+                               "grades",
+            },
+        }
+    ]
+
+    if current_user:
+        tools.extend(authenticated_tools)
 
     # Create an event generator to stream the response from OpenAI's format
     async def event_generator():
@@ -264,6 +307,17 @@ async def chat(chat_request: ChatRequest):
                         case "search_uni_website":
                             result = await uni_website_search_tool \
                                 .search_uni_website(**call["arguments"])
+                        case "get_timetable":
+                            result = await timetable_tool.get_timetable(
+                                current_user.username,
+                                current_user.cookies
+                            )
+                        case "get_learning_central_stream":
+                            result = await learning_central_tool \
+                                .get_learning_central_stream(
+                                    current_user.username,
+                                    current_user.cookies
+                                )
                         case "search_society":
                             result = await society_scrape_tool \
                                 .society_scrape_tool(**call["arguments"])

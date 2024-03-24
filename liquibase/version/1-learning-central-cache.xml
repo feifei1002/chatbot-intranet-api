@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="1-0" author="kavin" dbms="postgresql">
+        <createTable tableName="learning_central_cookies">
+            <column name="username" type="varchar(20)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="cookies" type="text"/>
+            <column name="expiry" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex indexName="idx_lc_username" tableName="learning_central_cookies">
+            <column name="username"/>
+        </createIndex>
+        <createIndex indexName="idx_lc_expiry" tableName="learning_central_cookies">
+            <column name="expiry"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
