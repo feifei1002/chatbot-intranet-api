@@ -1,4 +1,6 @@
 import os
+import re
+
 from fastapi import APIRouter, HTTPException, Response, Depends
 from openai import AsyncOpenAI
 from pydantic import BaseModel
@@ -101,28 +103,60 @@ async def get_conversation_id(conversation_title: str, username: str):
     conn = await pool.getconn()
     try:
         async with conn.cursor() as cursor:
-            query = "SELECT * FROM conversations WHERE conversation_title = %s"
-            await cursor.execute(query, (conversation_title,))
+            query = "SELECT conversation_id FROM conversations WHERE conversation_title = %s AND username = %s"
+            await cursor.execute(query, (conversation_title,username))
             rows = await cursor.fetchall()
-            for row in rows:
-                print(row)
+
+            # for row in rows:
+            #     print(row)
+
+            # return conversation id
+            conversation_id = int(re.sub(r'[^\w]', ' ', str(rows[0])))
+            print("id is: ", conversation_id)
+
+            return conversation_id
     except psycopg.Error as e:
         print("Error executing SELECT statement:", e)
-
-    # return conversation id
-
 
 
 # get message id from conversation id
 async def get_message_id(conversation_id: int):
-    print("")
-    # return history message id
+    conn = await pool.getconn()
+    try:
+        async with conn.cursor() as cursor:
+            query = "SELECT message_id FROM conversation_history WHERE conversation_id = %s"
+            await cursor.execute(query, (conversation_id,))
+            rows = await cursor.fetchall()
+
+            # return history message id
+            # doesn't work yet because conversation_history is empty
+            # message_id = int(rows[0])
+            # print("message id is: ", rows)
+            return 1
+    except psycopg.Error as e:
+        print("Error executing SELECT statement:", e)
 
 
 
 # get role and content from message id
 async def get_message_contents(message_id: int):
-    print("")
+    conn = await pool.getconn()
+    try:
+        async with conn.cursor() as cursor:
+            query = "SELECT role, content FROM conversation_messages WHERE message_id = %s"
+            # conversation_history table empty so doesn't work yet
+            await cursor.execute(query, (message_id,))
+            # await cursor.execute(query, (1,))
+            rows = await cursor.fetchall()
+
+            # return history message id
+            role = rows[0][0]
+            content = rows[0][1]
+            print("role is: ", role)
+            print("content is: ", content)
+            # return message_id
+    except psycopg.Error as e:
+        print("Error executing SELECT statement:", e)
     # return role and content
 
     # turn role and content values into array
@@ -131,13 +165,13 @@ async def get_message_contents(message_id: int):
 
 async def get_conversation_history_from_database(title: str, username: str):
     # testing values are sent correctly
-    print("title is ", title)
-    print("username is ", username)
+    # print("title is ", title)
+    # print("username is ", username)
 
     # select values from databases using title and username
     conversation_id = await get_conversation_id(title, username)
-    # message_id = await get_message_id(conversation_id)
-    # message_contents = await get_message_contents(message_id)
+    message_id = await get_message_id(conversation_id)
+    await get_message_contents(message_id)
 
     # return conversation history
     # print(message_contents)
