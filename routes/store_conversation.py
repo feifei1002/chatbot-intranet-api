@@ -70,6 +70,7 @@ async def get_conversation(messages: ChatHistory):
     return message_history
 
 
+# store role and content into conversation_messages database
 async def store_conversation(message_history: list):
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
@@ -80,6 +81,7 @@ async def store_conversation(message_history: list):
                 )
 
 
+# store conversation title and username into conversations database
 async def store_conversation_title(conversation_title: str, username: str):
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
@@ -92,15 +94,41 @@ async def store_conversation_title(conversation_title: str, username: str):
             )
 
 
+# get conversation id for given title and username from database
+async def get_conversation_id(conversation_title: str, username: str):
+
+    # return conversation id
+
+
+
+# get message id from conversation id
+async def get_message_id(conversation_id: int):
+
+    # return history message id
+
+
+
+# get role and content from message id
+async def get_message_contents(message_id: int):
+
+    # return role and content
+
+    # turn role and content values into array
+
+
+
 async def get_conversation_history_from_database(title: str, username: str):
     # testing values are sent correctly
     print("title is ", title)
     print("username is ", username)
 
     # select values from databases using title and username
+    conversation_id = await get_conversation_id(title, username)
+    message_id = await get_message_id(conversation_id)
+    message_contents = await get_message_contents(message_id)
 
     # return conversation history
-
+    print(message_contents)
 
 
 @router.post("/store_conversation")
