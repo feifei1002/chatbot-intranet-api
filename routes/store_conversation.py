@@ -1,6 +1,8 @@
+import json
 import os
 import re
 
+import numpy as np
 from fastapi import APIRouter, HTTPException, Response, Depends
 from openai import AsyncOpenAI
 from pydantic import BaseModel
@@ -112,7 +114,7 @@ async def get_conversation_id(conversation_title: str, username: str):
 
             # return conversation id
             conversation_id = int(re.sub(r'[^\w]', ' ', str(rows[0])))
-            print("id is: ", conversation_id)
+            # print("id is: ", conversation_id)
 
             return conversation_id
     except psycopg.Error as e:
@@ -132,49 +134,35 @@ async def get_message_id(conversation_id: int):
             # doesn't work yet because conversation_history is empty
             # message_id = int(rows[0])
             # print("message id is: ", rows)
-            return 1
+            test_rows = (3,4)
+            return test_rows
     except psycopg.Error as e:
         print("Error executing SELECT statement:", e)
 
 
 
 # get role and content from message id
-async def get_message_contents(message_id: int):
+async def get_message_contents(message_id: list[int]):
     conn = await pool.getconn()
     try:
+        rows = []
         async with conn.cursor() as cursor:
-            query = "SELECT role, content FROM conversation_messages WHERE message_id = %s"
-            # conversation_history table empty so doesn't work yet
-            await cursor.execute(query, (message_id,))
-            # await cursor.execute(query, (1,))
-            rows = await cursor.fetchall()
+            for message in message_id:
+                query = "SELECT role, content FROM conversation_messages WHERE message_id = %s"
+                # conversation_history table empty so doesn't work yet
+                await cursor.execute(query, (message,))
+                rows.append(await cursor.fetchall())
 
-            # return history message id
-            role = rows[0][0]
-            content = rows[0][1]
-            print("role is: ", role)
-            print("content is: ", content)
-            # return message_id
+            # for row in rows:
+            #     print("role is: ", row[0][0])
+            #     print("content is: ", row[0][1])
+
+            # print(rows)
+            conversation = [{t[0]: t[1]} for sublist in rows for t in sublist]
+            print(conversation)
+            return conversation
     except psycopg.Error as e:
         print("Error executing SELECT statement:", e)
-    # return role and content
-
-    # turn role and content values into array
-
-
-
-async def get_conversation_history_from_database(title: str, username: str):
-    # testing values are sent correctly
-    # print("title is ", title)
-    # print("username is ", username)
-
-    # select values from databases using title and username
-    conversation_id = await get_conversation_id(title, username)
-    message_id = await get_message_id(conversation_id)
-    await get_message_contents(message_id)
-
-    # return conversation history
-    # print(message_contents)
 
 
 @router.post("/store_conversation")
@@ -197,4 +185,11 @@ async def handle_send_conversation(title: ConversationTitle,
                                    Depends(get_current_user_optional)):
     username = user.username
     conversation_title = title.conversation_title
-    await get_conversation_history_from_database(conversation_title, username)
+
+    # select values from databases using title and username
+    conversation_id = await get_conversation_id(conversation_title, username)
+    message_id = await get_message_id(conversation_id)
+    conversation_history = await get_message_contents(message_id)
+
+    # return conversation history
+    return Response(content=json.dumps(conversation_history), media_type='application/json')
