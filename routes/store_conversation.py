@@ -2,6 +2,8 @@ import os
 from fastapi import APIRouter, HTTPException, Response, Depends
 from openai import AsyncOpenAI
 from pydantic import BaseModel
+import psycopg
+
 from routes.authentication import AuthenticatedUser, get_current_user_optional
 from utils.db import pool
 from utils.models import ConversationMessage
@@ -96,6 +98,16 @@ async def store_conversation_title(conversation_title: str, username: str):
 
 # get conversation id for given title and username from database
 async def get_conversation_id(conversation_title: str, username: str):
+    conn = await pool.getconn()
+    try:
+        async with conn.cursor() as cursor:
+            query = "SELECT * FROM conversations WHERE conversation_title = %s"
+            await cursor.execute(query, (conversation_title,))
+            rows = await cursor.fetchall()
+            for row in rows:
+                print(row)
+    except psycopg.Error as e:
+        print("Error executing SELECT statement:", e)
 
     # return conversation id
 
@@ -103,14 +115,14 @@ async def get_conversation_id(conversation_title: str, username: str):
 
 # get message id from conversation id
 async def get_message_id(conversation_id: int):
-
+    print("")
     # return history message id
 
 
 
 # get role and content from message id
 async def get_message_contents(message_id: int):
-
+    print("")
     # return role and content
 
     # turn role and content values into array
@@ -124,11 +136,11 @@ async def get_conversation_history_from_database(title: str, username: str):
 
     # select values from databases using title and username
     conversation_id = await get_conversation_id(title, username)
-    message_id = await get_message_id(conversation_id)
-    message_contents = await get_message_contents(message_id)
+    # message_id = await get_message_id(conversation_id)
+    # message_contents = await get_message_contents(message_id)
 
     # return conversation history
-    print(message_contents)
+    # print(message_contents)
 
 
 @router.post("/store_conversation")
@@ -152,4 +164,3 @@ async def handle_send_conversation(title: ConversationTitle,
     username = user.username
     conversation_title = title.conversation_title
     await get_conversation_history_from_database(conversation_title, username)
-
