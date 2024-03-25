@@ -90,8 +90,8 @@ async def store_conversation(message_history: list, conversation_title: str, use
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
             await cur.execute(
-                "INSERT INTO conversations (conversation_id, conversation_title, username)"
-                " VALUES (gen_random_uuid (), %s, %s)",
+                "INSERT INTO conversations (conversation_title, username)"
+                " VALUES (%s, %s)",
                 # Only extract the title, remove everything before index 21
                 # and the last 7 indices of the title
                 (conversation_title[21:-7], username),

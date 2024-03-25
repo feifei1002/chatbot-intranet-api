@@ -6,7 +6,7 @@
 
     <changeSet id="2-0" author="fei" dbms="postgresql">
         <createTable tableName="conversations">
-            <column name="conversation_id" type="uuid">
+            <column name="id" type="uuid" defaultValue="gen_random_uuid()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="conversation_title" type="varchar(200)">
@@ -37,7 +37,7 @@
         </createTable>
     </changeSet>
 
-    <changeSet id="2-3" author="fei" dbms="postgresql">
+    <changeSet id="2-2" author="fei" dbms="postgresql">
         <createTable tableName="conversation_history">
             <column name="history_id" type="int">
                 <constraints primaryKey="true" nullable="false"/>
@@ -50,71 +50,4 @@
             </column>
         </createTable>
     </changeSet>
-
-    <changeSet id="2-4" author="alex">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <uniqueConstraintExists tableName="conversations"
-                                        columnNames="conversation_id"/>
-            </not>
-        </preConditions>
-        <addUniqueConstraint tableName="conversations"
-                             columnNames="conversation_id"
-                             constraintName="unique_conversation_id"/>
-    </changeSet>
-
-    <changeSet id="2-5" author="alex">
-        <preConditions onFail="MARK_RAN">
-            <tableExists tableName="conversation_history"/>
-            <tableExists tableName="conversations"/>
-            <tableExists tableName="conversation_messages"/>
-        </preConditions>
-        <addForeignKeyConstraint baseTableName="conversation_history"
-                                 baseColumnNames="message_id"
-                                 constraintName="fk_conversation_history_message"
-                                 referencedTableName="conversation_messages"
-                                 referencedColumnNames="message_id"
-                                 referencedTableSchemaName="public"/>
-
-        <addForeignKeyConstraint baseTableName="conversation_history"
-                                 baseColumnNames="conversation_id"
-                                 constraintName="fk_conversation_history_conversation"
-                                 referencedTableName="conversations"
-                                 referencedColumnNames="conversation_id"
-                                 referencedTableSchemaName="public"/>
-    </changeSet>
-
-    <changeSet id="2-6" author="fei">
-        <addAutoIncrement columnDataType="int"
-            columnName="message_id"
-            defaultOnNull="false"
-            generationType="ALWAYS"
-            incrementBy="1"
-            schemaName="public"
-            startWith="1"
-            tableName="conversation_messages"/>
-    </changeSet>
-
-<!--    <changeSet id="2-7" author="fei">-->
-<!--        <addAutoIncrement columnDataType="int"-->
-<!--            columnName="conversation_id"-->
-<!--            defaultOnNull="false"-->
-<!--            generationType="ALWAYS"-->
-<!--            incrementBy="1"-->
-<!--            schemaName="public"-->
-<!--            startWith="1"-->
-<!--            tableName="conversations"/>-->
-<!--    </changeSet>-->
-
-    <changeSet id="2-8" author="alex">
-        <addAutoIncrement columnDataType="int"
-            columnName="history_id"
-            defaultOnNull="false"
-            generationType="ALWAYS"
-            incrementBy="1"
-            schemaName="public"
-            startWith="1"
-            tableName="conversation_history"/>
-    </changeSet>
-
 </databaseChangeLog>
