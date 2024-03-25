@@ -30,6 +30,7 @@ async def get_authenticated_user():
 class ChatHistory(BaseModel):
     chat_messages: list[ConversationMessage]
 
+
 class ConversationTitle(BaseModel):
     conversation_title: str
 
@@ -99,7 +100,7 @@ async def store_conversation(message_history: list, conversation_title: str, use
             )
             for idx, message in message_history:
                 await cur.execute(
-                    "INSERT INTO conversation_messages (role, content) VALUES (%s, %s)",
+                    "INSERT INTO messages (role, content, idx) VALUES (%s, %s, %s)",
                     (message['role'], message['content'])
                 )
 
