@@ -41,7 +41,7 @@
                 <constraints primaryKey="true"
                              nullable="false"
                              foreignKeyName="fk_conversation_history_conversation"
-                             references="conversations()"
+                             references="conversations(id)"
                 />
             </column>
             <column name="message_id" type="int">
