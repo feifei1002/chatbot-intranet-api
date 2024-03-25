@@ -44,12 +44,15 @@
                              references="conversations(id)"
                 />
             </column>
-            <column name="message_id" type="int">
+            <column name="message_id" type="uuid">
                 <constraints primaryKey="true"
                              nullable="false"
                              foreignKeyName="fk_conversation_history_messages"
                              references="messages(id)"
                 />
+            </column>
+            <column name="idx" type="integer" >
+                <constraints nullable="false" />
             </column>
         </createTable>
     </changeSet>
