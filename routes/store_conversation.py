@@ -77,9 +77,25 @@ async def get_conversation(messages: ChatHistory):
 
 
 # store role and content into conversation_messages database
-async def store_conversation(message_history: list):
+# async def store_conversation(message_history: list):
+#     async with pool.connection() as conn:
+#         async with conn.cursor() as cur:
+#             for message in message_history:
+#                 await cur.execute(
+#                     "INSERT INTO conversation_messages (role, content) VALUES (%s, %s)",
+#                     (message['role'], message['content'])
+#                 )
+
+async def store_conversation(message_history: list, conversation_title: str, username: str):
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
+            await cur.execute(
+                "INSERT INTO conversations (conversation_id, conversation_title, username)"
+                " VALUES (gen_random_uuid (), %s, %s)",
+                # Only extract the title, remove everything before index 21
+                # and the last 7 indices of the title
+                (conversation_title[21:-7], username),
+            )
             for message in message_history:
                 await cur.execute(
                     "INSERT INTO conversation_messages (role, content) VALUES (%s, %s)",
@@ -88,16 +104,16 @@ async def store_conversation(message_history: list):
 
 
 # store conversation title and username into conversations database
-async def store_conversation_title(conversation_title: str, username: str):
-    async with pool.connection() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute(
-                "INSERT INTO conversations (conversation_title, username)"
-                " VALUES (%s, %s)",
-                # Only extract the title, remove everything before index 21
-                # and the last 7 indices of the title
-                (conversation_title[21:-7], username)
-            )
+# async def store_conversation_title(conversation_title: str, username: str):
+#     async with pool.connection() as conn:
+#         async with conn.cursor() as cur:
+#             await cur.execute(
+#                 "INSERT INTO conversations (conversation_id, conversation_title, username)"
+#                 " VALUES (gen_random_uuid (), %s, %s)",
+#                 # Only extract the title, remove everything before index 21
+#                 # and the last 7 indices of the title
+#                 (conversation_title[21:-7], username),
+#             )
 
 
 # get conversation id for given title and username from database
@@ -173,9 +189,9 @@ async def handle_store_conversation(messages: ChatHistory,
         raise HTTPException(status_code=401, detail="Unauthorised")
     username = user.username
     message_history = await get_conversation(messages)
-    await store_conversation(message_history)
     message_history_title = await create_conversation_title(message_history)
-    await store_conversation_title(message_history_title, username)
+    await store_conversation(message_history, message_history_title, username)
+    # await store_conversation_title(message_history_title, username)
     # return JSONResponse(content={"message": "Conversation stored successfully"})
     return Response(content=message_history_title, media_type='application/json')
 
