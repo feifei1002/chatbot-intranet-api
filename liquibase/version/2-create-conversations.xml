@@ -6,7 +6,7 @@
 
     <changeSet id="2-0" author="fei" dbms="postgresql">
         <createTable tableName="conversations">
-            <column name="conversation_id" type="int">
+            <column name="conversation_id" type="uuid">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="conversation_title" type="varchar(200)">
@@ -42,7 +42,7 @@
             <column name="history_id" type="int">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="conversation_id" type="int">
+            <column name="conversation_id" type="uuid">
                 <constraints nullable="false"/>
             </column>
             <column name="message_id" type="int">
@@ -95,16 +95,16 @@
             tableName="conversation_messages"/>
     </changeSet>
 
-    <changeSet id="2-7" author="fei">
-        <addAutoIncrement columnDataType="int"
-            columnName="conversation_id"
-            defaultOnNull="false"
-            generationType="ALWAYS"
-            incrementBy="1"
-            schemaName="public"
-            startWith="1"
-            tableName="conversations"/>
-    </changeSet>
+<!--    <changeSet id="2-7" author="fei">-->
+<!--        <addAutoIncrement columnDataType="int"-->
+<!--            columnName="conversation_id"-->
+<!--            defaultOnNull="false"-->
+<!--            generationType="ALWAYS"-->
+<!--            incrementBy="1"-->
+<!--            schemaName="public"-->
+<!--            startWith="1"-->
+<!--            tableName="conversations"/>-->
+<!--    </changeSet>-->
 
     <changeSet id="2-8" author="alex">
         <addAutoIncrement columnDataType="int"
