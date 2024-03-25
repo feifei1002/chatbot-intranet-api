@@ -9,23 +9,21 @@
             <column name="id" type="uuid" defaultValue="gen_random_uuid()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="conversation_title" type="varchar(200)">
+            <column name="title" type="varchar(200)">
                 <constraints nullable="false"/>
             </column>
             <column name="username" type="varchar(20)">
                 <constraints nullable="false"/>
             </column>
         </createTable>
+        <createIndex tableName="conversations" indexName="conversations_username">
+            <column name="username" />
+        </createIndex>
     </changeSet>
 
     <changeSet id="2-1" author="fei" dbms="postgresql">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <tableExists tableName="conversation_messages"/>
-            </not>
-        </preConditions>
-        <createTable tableName="conversation_messages">
-            <column name="message_id" type="int">
+        <createTable tableName="messages">
+            <column name="id" type="uuid" defaultValue="gen_random_uuid()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="role" type="varchar(20)">
@@ -39,14 +37,19 @@
 
     <changeSet id="2-2" author="fei" dbms="postgresql">
         <createTable tableName="conversation_history">
-            <column name="history_id" type="int">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
             <column name="conversation_id" type="uuid">
-                <constraints nullable="false"/>
+                <constraints primaryKey="true"
+                             nullable="false"
+                             foreignKeyName="fk_conversation_history_conversation"
+                             references="conversations()"
+                />
             </column>
             <column name="message_id" type="int">
-                <constraints nullable="false"/>
+                <constraints primaryKey="true"
+                             nullable="false"
+                             foreignKeyName="fk_conversation_history_messages"
+                             references="messages(id)"
+                />
             </column>
         </createTable>
     </changeSet>
