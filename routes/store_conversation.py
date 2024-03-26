@@ -161,7 +161,7 @@ async def create_conversation(current_user: Annotated[
             await cur.execute("INSERT INTO conversations (username) VALUES (%s) RETURNING id",
                               (username,))
             conversation_id = await cur.fetchone()
-            return conversation_id
+            return {"conversation_id": conversation_id}
 
 
 # After every message
@@ -208,6 +208,7 @@ async def delete_conversation(conversation_id: UUID, current_user: Annotated[
     username = current_user.username
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
+            # Check if the user own the conversation
             await cur.execute("SELECT username FROM conversations WHERE id = %s", (conversation_id,))
             conversation_owner = await cur.fetchone()
             if conversation_owner is None or conversation_owner[0] != username:
