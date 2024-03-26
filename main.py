@@ -2,11 +2,15 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from routes import chat, suggested_questions, text_to_speech
+from honeycomb.opentelemetry import configure_opentelemetry
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 
 from routes import authentication
+from routes import chat, suggested_questions, text_to_speech
 from utils import db
+
+configure_opentelemetry()
+HTTPXClientInstrumentor().instrument()
 
 
 @asynccontextmanager
