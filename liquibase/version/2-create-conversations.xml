@@ -9,7 +9,7 @@
             <column name="id" type="uuid" defaultValue="gen_random_uuid()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="title" type="varchar(200)">
+            <column name="title" type="varchar(200)" defaultValue="Untitled">
                 <constraints nullable="false"/>
             </column>
             <column name="username" type="varchar(20)">

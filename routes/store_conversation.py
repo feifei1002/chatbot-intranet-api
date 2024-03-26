@@ -8,7 +8,7 @@ from openai import AsyncOpenAI
 from psycopg.rows import dict_row
 from pydantic import BaseModel
 
-from routes.authentication import AuthenticatedUser, get_current_user_optional, get_current_user
+from routes.authentication import AuthenticatedUser, get_current_user
 from utils.db import pool
 from utils.models import ConversationMessage
 
@@ -21,10 +21,6 @@ client = AsyncOpenAI(api_key=TOGETHER_API_KEY,
 
 __allowed_roles = ["user", "assistant"]
 
-
-async def get_authenticated_user():
-    username = AuthenticatedUser.username
-    return username
 
 
 class ChatHistory(BaseModel):
@@ -78,145 +74,40 @@ async def get_conversation(messages: ChatHistory):
     return message_history
 
 
-# store role and content into conversation_messages database
-# async def store_conversation(message_history: list):
-#     async with pool.connection() as conn:
-#         async with conn.cursor() as cur:
-#             for message in message_history:
-#                 await cur.execute(
-#                     "INSERT INTO conversation_messages (role, content) VALUES (%s, %s)",
-#                     (message['role'], message['content'])
-#                 )
-
-async def store_conversation(message_history: list, conversation_title: str, username: str):
-    async with pool.connection() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute(
-                "INSERT INTO conversations (title, username)"
-                " VALUES (%s, %s)",
-                # Only extract the title, remove everything before index 21
-                # and the last 7 indices of the title
-                (conversation_title[100:], username),
-            )
-            for idx, message in message_history:
-                await cur.execute(
-                    "INSERT INTO messages (role, content, idx) VALUES (%s, %s, %s)",
-                    (message['role'], message['content'])
-                )
-
-
-# store conversation title and username into conversations database
-# async def store_conversation_title(conversation_title: str, username: str):
+# async def store_conversation(message_history: list, conversation_title: str, username: str):
 #     async with pool.connection() as conn:
 #         async with conn.cursor() as cur:
 #             await cur.execute(
-#                 "INSERT INTO conversations (conversation_id, conversation_title, username)"
-#                 " VALUES (gen_random_uuid (), %s, %s)",
-#                 # Only extract the title, remove everything before index 21
-#                 # and the last 7 indices of the title
-#                 (conversation_title[21:-7], username),
+#                 "INSERT INTO conversations (title, username)"
+#                 " VALUES (%s, %s)",
+#                 (conversation_title[100:], username),
 #             )
-
-
-# # get conversation id for given title and username from database
-# async def get_conversation_id(conversation_title: str, username: str):
-#     conn = await pool.getconn()
-#     try:
-#         async with conn.cursor() as cursor:
-#             query = "SELECT conversation_id FROM conversations WHERE conversation_title = %s AND username = %s"
-#             await cursor.execute(query, (conversation_title,username))
-#             rows = await cursor.fetchall()
+#             for idx, message in message_history:
+#                 await cur.execute(
+#                     "INSERT INTO messages (role, content, idx) VALUES (%s, %s, %s)",
+#                     (message['role'], message['content'])
+#                 )
 #
-#             # for row in rows:
-#             #     print(row)
 #
-#             # return conversation id
-#             conversation_id = int(re.sub(r'[^\w]', ' ', str(rows[0])))
-#             # print("id is: ", conversation_id)
-#
-#             return conversation_id
-#     except psycopg.Error as e:
-#         print("Error executing SELECT statement:", e)
-
-
-# # get message id from conversation id
-# async def get_message_id(conversation_id: int):
-#     conn = await pool.getconn()
-#     try:
-#         async with conn.cursor() as cursor:
-#             query = "SELECT message_id FROM conversation_history WHERE conversation_id = %s"
-#             await cursor.execute(query, (conversation_id,))
-#             rows = await cursor.fetchall()
-#
-#             # return history message id
-#             # doesn't work yet because conversation_history is empty
-#             # message_id = int(rows[0])
-#             # print("message id is: ", rows)
-#             test_rows = (3,4)
-#             return test_rows
-#     except psycopg.Error as e:
-#         print("Error executing SELECT statement:", e)
-
-
-# # get role and content from message id
-# async def get_message_contents(message_id: list[int]):
-#     conn = await pool.getconn()
-#     try:
-#         rows = []
-#         async with conn.cursor() as cursor:
-#             for message in message_id:
-#                 query = "SELECT role, content FROM conversation_messages WHERE message_id = %s"
-#                 # conversation_history table empty so doesn't work yet
-#                 await cursor.execute(query, (message,))
-#                 rows.append(await cursor.fetchall())
-#
-#             # for row in rows:
-#             #     print("role is: ", row[0][0])
-#             #     print("content is: ", row[0][1])
-#
-#             # print(rows)
-#             conversation = [{t[0]: t[1]} for sublist in rows for t in sublist]
-#             print(conversation)
-#             return conversation
-#     except psycopg.Error as e:
-#         print("Error executing SELECT statement:", e)
-
-
-@router.post("/store_conversation")
-async def handle_store_conversation(messages: ChatHistory,
-                                    user: AuthenticatedUser =
-                                    Depends(get_current_user_optional)):
-    if user is None:
-        raise HTTPException(status_code=401, detail="Unauthorised")
-    username = user.username
-    message_history = await get_conversation(messages)
-    message_history_title = await create_conversation_title(message_history)
-    await store_conversation(message_history, message_history_title, username)
-    # await store_conversation_title(message_history_title, username)
-    # return JSONResponse(content={"message": "Conversation stored successfully"})
-    return Response(content=message_history_title, media_type='application/json')
-
-
-# @router.post("/get_conversation_from_title")
-# async def handle_send_conversation(title: ConversationTitle,
-#                                    user: AuthenticatedUser =
-#                                    Depends(get_current_user_optional)):
+# @router.post("/store_conversation")
+# async def handle_store_conversation(messages: ChatHistory,
+#                                     user: AuthenticatedUser =
+#                                     Depends(get_current_user)):
 #     username = user.username
-#     conversation_title = title.conversation_title
-#
-#     # select values from databases using title and username
-#     conversation_id = await get_conversation_id(conversation_title, username)
-#     message_id = await get_message_id(conversation_id)
-#     conversation_history = await get_message_contents(message_id)
-#
-#     # return conversation history
-#     return Response(content=json.dumps(conversation_history), media_type='application/json')
+#     message_history = await get_conversation(messages)
+#     message_history_title = await create_conversation_title(message_history)
+#     await store_conversation(message_history, message_history_title, username)
+#     # await store_conversation_title(message_history_title, username)
+#     # return JSONResponse(content={"message": "Conversation stored successfully"})
+#     return Response(content=message_history_title, media_type='application/json')
+
 
 class Conversation(BaseModel):
     id: UUID
     title: str
 
 
+# Loads conversations on left side
 @router.get("/conversations", response_model=List[Conversation])
 async def get_conversations(current_user: Annotated[
     Union[AuthenticatedUser],
@@ -228,9 +119,6 @@ async def get_conversations(current_user: Annotated[
             conversations = await cur.fetchall()
 
             return conversations
-
-
-# class Message(BaseModel):
 
 
 @router.get("/conversations/{conversation_id}", response_model=List[ConversationMessage])
@@ -256,3 +144,36 @@ async def get_conversation_history(conversation_id: UUID, current_user: Annotate
             history = await cur.fetchall()
 
             return history
+
+
+# Creating a new chat
+@router.post("/conversations/create")
+async def create_conversation(current_user: Annotated[
+    Union[AuthenticatedUser],
+    Depends(get_current_user)
+]):
+    pass
+
+
+# After every message
+@router.post("/conversations/{conversation_id}/add_messages")
+async def add_messages(new_messages: List[ConversationMessage],
+                       conversation_id: UUID,
+                       current_user: Annotated[
+                           Union[AuthenticatedUser],
+                           Depends(get_current_user)
+                       ]):
+    # Fetch the max idx for the conversation from the conversation_history table
+
+    # If it's the first set of messages, generate a title and update the conversation
+
+    pass
+
+
+# Delete the whole conversation from the database
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: UUID, current_user: Annotated[
+    Union[AuthenticatedUser],
+    Depends(get_current_user)
+]):
+    pass
