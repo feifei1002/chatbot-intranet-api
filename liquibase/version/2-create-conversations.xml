@@ -9,7 +9,7 @@
             <column name="id" type="uuid" defaultValue="gen_random_uuid()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="title" type="varchar(200)" defaultValue="Untitled">
+            <column name="title" type="varchar(200)" defaultValue="untitled">
                 <constraints nullable="false"/>
             </column>
             <column name="username" type="varchar(20)">
@@ -42,6 +42,7 @@
                              nullable="false"
                              foreignKeyName="fk_conversation_history_conversation"
                              references="conversations(id)"
+                             deleteCascade="true"
                 />
             </column>
             <column name="message_id" type="uuid">
@@ -49,6 +50,7 @@
                              nullable="false"
                              foreignKeyName="fk_conversation_history_messages"
                              references="messages(id)"
+                             deleteCascade="true"
                 />
             </column>
             <column name="idx" type="integer" >

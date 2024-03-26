@@ -154,13 +154,12 @@ async def create_conversation(current_user: Annotated[
     Union[AuthenticatedUser],
     Depends(get_current_user)
 ]):
-    default_title = "Untitled"
     username = current_user.username
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
             # Insert a new conversation into the conversations table
-            await cur.execute("INSERT INTO conversations (title, username) VALUES (%s, %s) RETURNING id",
-                              (default_title, username,))
+            await cur.execute("INSERT INTO conversations (username) VALUES (%s) RETURNING id",
+                              (username,))
             conversation_id = await cur.fetchone()
             return conversation_id
 
@@ -209,13 +208,11 @@ async def delete_conversation(conversation_id: UUID, current_user: Annotated[
     username = current_user.username
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
+            await cur.execute("SELECT username FROM conversations WHERE id = %s", (conversation_id,))
+            conversation_owner = await cur.fetchone()
+            if conversation_owner is None or conversation_owner[0] != username:
+                raise HTTPException(status_code=403, detail="You don't have permission to delete this conversation")
             # Delete the records from the conversation_history table first since it contains foreign keys
             await cur.execute("DELETE FROM conversation_history WHERE conversation_id = %s",
                               (conversation_id, ))
-            # Delete the records from the messages table that are not in the conversation_history table
-            await cur.execute("DELETE FROM messages WHERE id NOT IN"
-                              "(SELECT message_id FROM conversation_history)")
-            # Delete the conversation from the conversations table
-            await cur.execute("DELETE FROM conversations WHERE id = %s AND username = %s",
-                              (conversation_id, username))
-            return "conversation deleted"
+            return {"message": "Conversation deleted"}
