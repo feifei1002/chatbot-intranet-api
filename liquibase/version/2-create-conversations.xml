@@ -17,7 +17,7 @@
             </column>
         </createTable>
         <createIndex tableName="conversations" indexName="conversations_username">
-            <column name="username" />
+            <column name="username"/>
         </createIndex>
     </changeSet>
 
@@ -42,6 +42,7 @@
                              nullable="false"
                              foreignKeyName="fk_conversation_history_conversation"
                              references="conversations(id)"
+                             deleteCascade="true"
                 />
             </column>
             <column name="message_id" type="uuid">
@@ -49,11 +50,26 @@
                              nullable="false"
                              foreignKeyName="fk_conversation_history_messages"
                              references="messages(id)"
+                             deleteCascade="true"
                 />
             </column>
-            <column name="idx" type="integer" >
-                <constraints nullable="false" />
+            <column name="idx" type="integer">
+                <constraints nullable="false"/>
             </column>
         </createTable>
+    </changeSet>
+
+    <changeSet id="2-3" author="kavin">
+        <!-- fk to delete messages when conversation is deleted -->
+        <addUniqueConstraint tableName="conversation_history" columnNames="message_id"/>
+        <addForeignKeyConstraint
+                baseTableName="messages"
+                baseColumnNames="id"
+                constraintName="fk_messages_conversation_history"
+                referencedTableName="conversation_history"
+                referencedColumnNames="message_id"
+                deleteCascade="true"
+                deferrable="true"
+        />
     </changeSet>
 </databaseChangeLog>
