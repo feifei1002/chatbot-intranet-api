@@ -172,19 +172,60 @@ async def add_messages(new_messages: List[ConversationMessage],
                            Union[AuthenticatedUser],
                            Depends(get_current_user)
                        ]):
+
+    order_in_convo = 0
+    # for each new message from assistant and user
+    for message in new_messages:
+        # print(message.role)
+        # print(message.content)
+
+        # insert into messages table and then conversation_history table
+        # currently doesn't work? error: insert or update on tabel messages violates foreign key constraint fk_messages_conversation_history
+        # key id not present in table conversation history
+        async with pool.connection() as conn:
+            async with conn.transaction():
+                async with conn.cursor() as cur:
+                    await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
+                                      (message.role, message.content,))
+                    message_id = await cur.fetchone()
+
+                    await cur.execute(
+                        "INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)",
+                        (conversation_id, message_id, order_in_convo,))
+
+        # the two insert statements separately
+        # async with pool.connection() as conn:
+        #     async with conn.cursor() as cur:
+        #         await cur.execute("INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)",
+        #                           (conversation_id, message_id, order_in_convo,))
+
+        # async with pool.connection() as conn:
+        #     async with conn.cursor() as cur:
+        #         await cur.execute(query, (message.role, message.content, conversation_id, order_in_convo,))
+
+        # increment for next message in conversation
+        order_in_convo += 1
+
     # Fetch the max idx for the conversation from the conversation_history table
     async with pool.connection() as conn:
         async with conn.cursor(row_factory=dict_row) as cur:
             await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s",
-                              (conversation_id,))
+                            (conversation_id,))
+
             max_idx_dict = await cur.fetchone()
-            max_idx = max_idx_dict['max']
+
+            if cur.fetchone() is None:
+                # if no max idx found, assume its 1
+                max_idx = 1
+            else:
+                max_idx = max_idx_dict['max']
 
     # If it's the first set of messages, generate a title and update the conversation
-    # max idx is 2 when the user and assistant has responded once each, so first set of messages is 2 but could be 1, so use < 3?
+    # max idx is 2 when the user and assistant has responded once each,
+    # so first set of messages is 2 but could be 1, so use < 3?
     if max_idx < 3:
         # generates conversation title
-        conversation_title = await create_conversation_title(new_messages)   # new_messages is list[conversationmessage] instead of list[dict]
+        conversation_title = await create_conversation_title(new_messages)
 
         # updates current value of title to the new title
         async with pool.connection() as conn:
@@ -193,10 +234,14 @@ async def add_messages(new_messages: List[ConversationMessage],
                     "UPDATE conversations SET title = %s WHERE id = %s AND username = %s",
                     (conversation_title, conversation_id, current_user.username))
 
-        return "inserted ", conversation_title, " into conversations table"
+        return Response(
+            content={"message": "Title updated, and inserted messages into tables"},
+            media_type='application/json')
 
-    # what do I do here?
-    return "not first set of messages"
+    else:
+        return Response(
+            content={"message": "Title not updated, but inserted messages into tables"},
+            media_type='application/json')
 
 
 # Delete the whole conversation from the database
