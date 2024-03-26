@@ -205,4 +205,13 @@ async def delete_conversation(conversation_id: UUID, current_user: Annotated[
     Union[AuthenticatedUser],
     Depends(get_current_user)
 ]):
-    pass
+    username = current_user.username
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("DELETE FROM conversation_history WHERE conversation_id = %s",
+                              (conversation_id, ))
+            await cur.execute("DELETE FROM messages WHERE id NOT IN"
+                              "(SELECT message_id FROM conversation_history)")
+            await cur.execute("DELETE FROM conversations WHERE id = %s AND username = %s",
+                              (conversation_id, username))
+            return "conversation deleted"
