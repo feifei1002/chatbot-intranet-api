@@ -19,3 +19,4 @@ python-jose[cryptography]==3.3.0
 beautifulsoup4~=4.12.3
 ical-library==0.2.3
 psycopg[binary,pool]==3.1.18
+llama-index-postprocessor-cohere-rerank==0.1.2
