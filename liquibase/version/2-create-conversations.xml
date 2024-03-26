@@ -71,16 +71,5 @@
                 deleteCascade="true"
                 deferrable="true"
         />
-        <!-- fk to delete the title when conversation is deleted -->
-        <addUniqueConstraint tableName="conversation_history" columnNames="conversation_id"/>
-        <addForeignKeyConstraint
-                baseTableName="conversations"
-                baseColumnNames="id"
-                constraintName="fk_conversations_conversation_history"
-                referencedTableName="conversation_history"
-                referencedColumnNames="conversation_id"
-                deleteCascade="true"
-                deferrable="true"
-        />
     </changeSet>
 </databaseChangeLog>

@@ -259,6 +259,6 @@ async def delete_conversation(conversation_id: UUID, current_user: Annotated[
             if conversation_owner is None or conversation_owner[0] != username:
                 raise HTTPException(status_code=403, detail="You don't have permission to delete this conversation")
             # Delete the records from the conversation_history table first since it contains foreign keys
-            await cur.execute("DELETE FROM conversation_history WHERE conversation_id = %s",
+            await cur.execute("DELETE FROM conversations WHERE id = %s",
                               (conversation_id, ))
             return {"message": "Conversation deleted"}
