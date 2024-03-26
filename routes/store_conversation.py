@@ -148,13 +148,20 @@ async def get_conversation_history(conversation_id: UUID, current_user: Annotate
             return history
 
 
-# Creating a new chat
+# Creating a new conversation when the user click on the "new chat" button
 @router.post("/conversations/create")
 async def create_conversation(current_user: Annotated[
     Union[AuthenticatedUser],
     Depends(get_current_user)
 ]):
-    pass
+    default_title = "Untitled"
+    username = current_user.username
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("INSERT INTO conversations (title, username) VALUES (%s, %s) RETURNING id",
+                              (default_title, username,))
+            conversation_id = await cur.fetchone()
+            return conversation_id
 
 
 # After every message
