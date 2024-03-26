@@ -164,10 +164,27 @@ async def add_messages(new_messages: List[ConversationMessage],
                            Depends(get_current_user)
                        ]):
     # Fetch the max idx for the conversation from the conversation_history table
+    async with pool.connection() as conn:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute("SELECT idx FROM conversation_history WHERE conversation_id = %s",
+                              (conversation_id,))
+            max_idx = await cur.fetchall()
+            print("max idx is: ", max_idx)
+            # return max_idx
+
+
 
     # If it's the first set of messages, generate a title and update the conversation
+    # max idx is 2 when the user and assistant has responded once each, so first set of messages is 2 but could be 1, so use < 3?
+    if max_idx < 3:
+        conversation_title = await create_conversation_title(new_messages)   # new_messages is list[conversationmessage] instead of list[dict]
 
-    pass
+        async with pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "INSERT INTO conversations (title)"
+                    " VALUES %s WHERE id = %s AND username = %s",
+                    (conversation_title, conversation_id, current_user.username))
 
 
 # Delete the whole conversation from the database
