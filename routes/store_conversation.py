@@ -179,37 +179,33 @@ async def add_messages(new_messages: List[ConversationMessage],
         async with pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor() as cur:
-                    # transaction to allow two inserts
-                    await cur.execute("BEGIN TRANSACTION")
-                    await cur.execute("SET CONSTRAINTS ALL DEFERRED")
-
-                    # insert role and content into messages table
-                    await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id", (message.role, message.content))
-
-                    # get message id from insert statement
-                    message_id_row = await cur.fetchone()
-                    message_id = message_id_row[0]
-
-                    # find out how many values in idx column for the conversation id, so increase my one each time
-                    await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s", (conversation_id,))
-
-                    # gets value for the highest in idx column, so increase by 1 each time adding to table
                     try:
-                        max_idx_row = await cur.fetchone()
+                        # find out how many values in idx column for the conversation id, so increase my one each time
+                        await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s",
+                                          (conversation_id,))
+                        # gets value for the highest in idx column, so increase by 1 each time adding to table
+                        max_idx_row = await cur.fetchone()  # returns None is no value of id in conversations table
                         max_idx = int(max_idx_row[0])
-                    except TypeError:
-                        max_idx = 1
+                        next_idx = max_idx + 1
 
-                    next_idx = max_idx + 1
+                        # transaction to allow two inserts
+                        await cur.execute("BEGIN TRANSACTION")
+                        await cur.execute("SET CONSTRAINTS ALL DEFERRED")
 
-                    try:
+                        # insert role and content into messages table
+                        await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
+                                          (message.role, message.content))
+
+                        # get message id from insert statement
+                        message_id_row = await cur.fetchone()
+                        message_id = message_id_row[0]
+
                         # insert into conversation history
                         await cur.execute("INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)", (conversation_id, message_id, next_idx,))
+                        await cur.execute("COMMIT")
                     except:
-                        # if conversation id is not in table
+                        # if conversation id is not in conversations table
                         raise HTTPException(status_code=403, detail="You don't have access to this conversation")
-
-                    await cur.execute("COMMIT")
 
     # Fetch the max idx for the conversation from the conversation_history table
     async with pool.connection() as conn:
