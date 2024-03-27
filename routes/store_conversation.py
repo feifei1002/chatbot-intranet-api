@@ -173,25 +173,34 @@ async def add_messages(new_messages: List[ConversationMessage],
                            Depends(get_current_user)
                        ]):
 
-    order_in_convo = 0
+    order_in_convo = 1
     # for each new message from assistant and user
     for message in new_messages:
         # print(message.role)
         # print(message.content)
 
+        query = """BEGIN TRANSACTION;
+            SET CONSTRAINTS ALL DEFERRED;
+            INSERT INTO conversations (username) VALUES (%s) RETURNING id AS conversation_id;
+            INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id AS mesage_id;
+            INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, '6078b83d-b2b8-4b82-ae5d-5d84193694d8', %s);
+            COMMIT;"""
+
         # insert into messages table and then conversation_history table
-        # currently doesn't work? error: insert or update on tabel messages violates foreign key constraint fk_messages_conversation_history
-        # key id not present in table conversation history
         async with pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor() as cur:
-                    await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
-                                      (message.role, message.content,))
-                    message_id = await cur.fetchone()
+                    await cur.execute(query, (current_user.username, message.role, message.content, conversation_id, order_in_convo))
 
-                    await cur.execute(
-                        "INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)",
-                        (conversation_id, message_id, order_in_convo,))
+                    # await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
+                    #                   (message.role, message.content,))
+                    # message_id = await cur.fetchone()
+                    #
+                    # await cur.execute(
+                    #     "INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)",
+                    #     (conversation_id, message_id, order_in_convo,))
+
+
 
         # the two insert statements separately
         # async with pool.connection() as conn:
