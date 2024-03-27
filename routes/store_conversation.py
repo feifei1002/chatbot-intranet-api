@@ -23,7 +23,6 @@ client = AsyncOpenAI(api_key=TOGETHER_API_KEY,
 __allowed_roles = ["user", "assistant"]
 
 
-
 class ChatHistory(BaseModel):
     chat_messages: list[ConversationMessage]
 
@@ -173,71 +172,46 @@ async def add_messages(new_messages: List[ConversationMessage],
                            Union[AuthenticatedUser],
                            Depends(get_current_user)
                        ]):
+    generate_title = False
 
-    # for each new message from assistant and user
-    for message in new_messages:
-        # insert into messages table and then conversation_history table
-        async with pool.connection() as conn:
-            async with conn.transaction():
-                async with conn.cursor() as cur:
-                    await cur.execute("SET CONSTRAINTS ALL DEFERRED")
-
-                    try:
-                        # if conversation id is not in conversations table, insert into
-                        await cur.execute("INSERT INTO conversations (id, username) VALUES (%s, %s)",
-                                              (conversation_id, current_user.username))
-                    except:
-                        # already conversation id in conversations
-                        # so rollback so error in try block doesn't abort transaction
-                        await cur.execute("ROLLBACK")
-                    finally:
-                        await cur.execute("SET CONSTRAINTS ALL DEFERRED")
-
-                        # find out how many values in idx column for the conversation id, so increase my one each time
-                        await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s",
-                                                  (conversation_id,))
-
-                        max_idx_dict = await cur.fetchone()
-
-                        if max_idx_dict[0] is None:
-                            # no idx in table so set as 0
-                            max_idx = 0
-                        else:
-                            # gets int value of highest idx value
-                            max_idx = int(max_idx_dict[0])
-
-                        # increment by 1 before adding new row to table
-                        next_idx = max_idx + 1
-
-                        # insert role and content into messages table
-                        await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
-                                              (message.role, message.content))
-
-                        # get message id from insert statement
-                        message_id_row = await cur.fetchone()
-                        message_id = message_id_row[0]
-
-                        # insert into conversation history
-                        await cur.execute("INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)", (conversation_id, message_id, next_idx,))
-
-    # Fetch the max idx for the conversation from the conversation_history table
+    # insert into messages table and then conversation_history table
     async with pool.connection() as conn:
-        async with conn.cursor(row_factory=dict_row) as cur:
-            await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s",
-                            (conversation_id,))
+        async with conn.transaction():
+            async with conn.cursor() as cur:
+                await cur.execute("SET CONSTRAINTS ALL DEFERRED")
+                # for each new message from assistant and user
+                for message in new_messages:
+                    # find out how many values in idx column for the conversation id, so increase my one each time
+                    await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s",
+                                      (conversation_id,))
 
-            max_idx_dict = await cur.fetchone()
+                    max_idx_dict = await cur.fetchone()
 
-            if max_idx_dict['max'] is None:
-                # if no max idx found, assume its 0
-                max_idx = 0
-            else:
-                # get int value for highest idx
-                max_idx = int(max_idx_dict['max'])
+                    if max_idx_dict is None:
+                        # no idx in table so set as 0
+                        next_idx = 0
+                        generate_title = True
+                    else:
+                        # gets int value of highest idx value
+                        # increment by 1 before adding new row to table
+                        next_idx = int(max_idx_dict[0]) + 1
+
+                    # insert role and content into messages table
+                    await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
+                                      (message.role, message.content))
+
+                    # get message id from insert statement
+                    message_id_row = await cur.fetchone()
+                    message_id = message_id_row[0]
+
+                    # insert into conversation history
+                    await cur.execute(
+                        "INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)",
+                        (conversation_id, message_id, next_idx,))
 
     # If it's the first set of messages, generate a title and update the conversation
     # max idx is 2 when the user and assistant has responded once each,
-    if max_idx < 3:
+    if generate_title:
         # generates conversation title
         conversation_title = await create_conversation_title(new_messages)
 
@@ -248,10 +222,7 @@ async def add_messages(new_messages: List[ConversationMessage],
                     "UPDATE conversations SET title = %s WHERE id = %s AND username = %s",
                     (conversation_title, conversation_id, current_user.username))
 
-        return {"message": "Title updated, and inserted messages into tables"}
-
-    else:
-        return {"message": "Title not updated, but inserted messages into tables"}
+    return {"message": "Inserted messages sucessfully"}
 
 
 # Delete the whole conversation from the database
@@ -270,5 +241,5 @@ async def delete_conversation(conversation_id: UUID, current_user: Annotated[
                 raise HTTPException(status_code=403, detail="You don't have permission to delete this conversation")
             # Delete the records from the conversation_history table first since it contains foreign keys
             await cur.execute("DELETE FROM conversations WHERE id = %s",
-                              (conversation_id, ))
+                              (conversation_id,))
             return {"message": "Conversation deleted"}
