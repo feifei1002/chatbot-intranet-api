@@ -173,47 +173,43 @@ async def add_messages(new_messages: List[ConversationMessage],
                            Depends(get_current_user)
                        ]):
 
-    order_in_convo = 1
     # for each new message from assistant and user
     for message in new_messages:
-        # print(message.role)
-        # print(message.content)
-
-        query = """BEGIN TRANSACTION;
-            SET CONSTRAINTS ALL DEFERRED;
-            INSERT INTO conversations (username) VALUES (%s) RETURNING id AS conversation_id;
-            INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id AS mesage_id;
-            INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, '6078b83d-b2b8-4b82-ae5d-5d84193694d8', %s);
-            COMMIT;"""
-
         # insert into messages table and then conversation_history table
         async with pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor() as cur:
-                    await cur.execute(query, (current_user.username, message.role, message.content, conversation_id, order_in_convo))
+                    # transaction to allow two inserts
+                    await cur.execute("BEGIN TRANSACTION")
+                    await cur.execute("SET CONSTRAINTS ALL DEFERRED")
 
-                    # await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
-                    #                   (message.role, message.content,))
-                    # message_id = await cur.fetchone()
-                    #
-                    # await cur.execute(
-                    #     "INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)",
-                    #     (conversation_id, message_id, order_in_convo,))
+                    # insert role and content into messages table
+                    await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id", (message.role, message.content))
 
+                    # get message id from insert statement
+                    message_id_row = await cur.fetchone()
+                    message_id = message_id_row[0]
 
+                    # find out how many values in idx column for the conversation id, so increase my one each time
+                    await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s", (conversation_id,))
 
-        # the two insert statements separately
-        # async with pool.connection() as conn:
-        #     async with conn.cursor() as cur:
-        #         await cur.execute("INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)",
-        #                           (conversation_id, message_id, order_in_convo,))
+                    # gets value for the highest in idx column, so increase by 1 each time adding to table
+                    try:
+                        max_idx_row = await cur.fetchone()
+                        max_idx = int(max_idx_row[0])
+                    except TypeError:
+                        max_idx = 1
 
-        # async with pool.connection() as conn:
-        #     async with conn.cursor() as cur:
-        #         await cur.execute(query, (message.role, message.content, conversation_id, order_in_convo,))
+                    next_idx = max_idx + 1
 
-        # increment for next message in conversation
-        order_in_convo += 1
+                    try:
+                        # insert into conversation history
+                        await cur.execute("INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)", (conversation_id, message_id, next_idx,))
+                    except:
+                        # if conversation id is not in table
+                        raise HTTPException(status_code=403, detail="You don't have access to this conversation")
+
+                    await cur.execute("COMMIT")
 
     # Fetch the max idx for the conversation from the conversation_history table
     async with pool.connection() as conn:
@@ -231,7 +227,6 @@ async def add_messages(new_messages: List[ConversationMessage],
 
     # If it's the first set of messages, generate a title and update the conversation
     # max idx is 2 when the user and assistant has responded once each,
-    # so first set of messages is 2 but could be 1, so use < 3?
     if max_idx < 3:
         # generates conversation title
         conversation_title = await create_conversation_title(new_messages)
@@ -243,14 +238,10 @@ async def add_messages(new_messages: List[ConversationMessage],
                     "UPDATE conversations SET title = %s WHERE id = %s AND username = %s",
                     (conversation_title, conversation_id, current_user.username))
 
-        return Response(
-            content={"message": "Title updated, and inserted messages into tables"},
-            media_type='application/json')
+        return {"message": "Title updated, and inserted messages into tables"}
 
     else:
-        return Response(
-            content={"message": "Title not updated, but inserted messages into tables"},
-            media_type='application/json')
+        return {"message": "Title not updated, but inserted messages into tables"}
 
 
 # Delete the whole conversation from the database
