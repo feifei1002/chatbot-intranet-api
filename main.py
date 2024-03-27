@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from honeycomb.opentelemetry import configure_opentelemetry
@@ -40,3 +40,6 @@ app.include_router(suggested_questions.router)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+
+FastAPIInstrumentor.instrument_app(app)
