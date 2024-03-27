@@ -76,34 +76,6 @@ async def get_conversation(messages: ChatHistory):
     return message_history
 
 
-# async def store_conversation(message_history: list, conversation_title: str, username: str):
-#     async with pool.connection() as conn:
-#         async with conn.cursor() as cur:
-#             await cur.execute(
-#                 "INSERT INTO conversations (title, username)"
-#                 " VALUES (%s, %s)",
-#                 (conversation_title[100:], username),
-#             )
-#             for idx, message in message_history:
-#                 await cur.execute(
-#                     "INSERT INTO messages (role, content, idx) VALUES (%s, %s, %s)",
-#                     (message['role'], message['content'])
-#                 )
-#
-#
-# @router.post("/store_conversation")
-# async def handle_store_conversation(messages: ChatHistory,
-#                                     user: AuthenticatedUser =
-#                                     Depends(get_current_user)):
-#     username = user.username
-#     message_history = await get_conversation(messages)
-#     message_history_title = await create_conversation_title(message_history)
-#     await store_conversation(message_history, message_history_title, username)
-#     # await store_conversation_title(message_history_title, username)
-#     # return JSONResponse(content={"message": "Conversation stored successfully"})
-#     return Response(content=message_history_title, media_type='application/json')
-
-
 class Conversation(BaseModel):
     id: UUID
     title: str
@@ -172,12 +144,14 @@ async def add_messages(new_messages: List[ConversationMessage],
                            Union[AuthenticatedUser],
                            Depends(get_current_user)
                        ]):
+    # only generate a title when there are no values in conversation_history for the id
     generate_title = False
 
-    # insert into messages table and then conversation_history table
+    # insert into conversation_history and messages
     async with pool.connection() as conn:
         async with conn.transaction():
             async with conn.cursor() as cur:
+                # allow transaction with multiple inserts
                 await cur.execute("SET CONSTRAINTS ALL DEFERRED")
                 # for each new message from assistant and user
                 for message in new_messages:
@@ -188,11 +162,10 @@ async def add_messages(new_messages: List[ConversationMessage],
                     max_idx_dict = await cur.fetchone()
 
                     if max_idx_dict is None:
-                        # no idx in table so set as 0
+                        # no idx in table so set as 0 and generate a conversation title
                         next_idx = 0
                         generate_title = True
                     else:
-                        # gets int value of highest idx value
                         # increment by 1 before adding new row to table
                         next_idx = int(max_idx_dict[0]) + 1
 
@@ -200,7 +173,7 @@ async def add_messages(new_messages: List[ConversationMessage],
                     await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
                                       (message.role, message.content))
 
-                    # get message id from insert statement
+                    # get message id from the above insert statement
                     message_id_row = await cur.fetchone()
                     message_id = message_id_row[0]
 
@@ -209,8 +182,7 @@ async def add_messages(new_messages: List[ConversationMessage],
                         "INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)",
                         (conversation_id, message_id, next_idx,))
 
-    # If it's the first set of messages, generate a title and update the conversation
-    # max idx is 2 when the user and assistant has responded once each,
+    # If it's the first set of messages, generate a title and update the value in conversations
     if generate_title:
         # generates conversation title
         conversation_title = await create_conversation_title(new_messages)
@@ -222,7 +194,7 @@ async def add_messages(new_messages: List[ConversationMessage],
                     "UPDATE conversations SET title = %s WHERE id = %s AND username = %s",
                     (conversation_title, conversation_id, current_user.username))
 
-    return {"message": "Inserted messages sucessfully"}
+    return {"message": "Inserted messages successfully"}
 
 
 # Delete the whole conversation from the database
