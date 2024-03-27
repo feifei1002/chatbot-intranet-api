@@ -1,5 +1,6 @@
 import json
 import os
+from types import NoneType
 from typing import Annotated, Union, List
 from uuid import UUID
 
@@ -179,22 +180,38 @@ async def add_messages(new_messages: List[ConversationMessage],
         async with pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor() as cur:
+                    await cur.execute("SET CONSTRAINTS ALL DEFERRED")
+
                     try:
+                        # if conversation id is not in conversations table, insert into
+                        await cur.execute("INSERT INTO conversations (id, username) VALUES (%s, %s)",
+                                              (conversation_id, current_user.username))
+                    except:
+                        # already conversation id in conversations
+                        # so rollback so error in try block doesn't abort transaction
+                        await cur.execute("ROLLBACK")
+                    finally:
+                        await cur.execute("SET CONSTRAINTS ALL DEFERRED")
+
                         # find out how many values in idx column for the conversation id, so increase my one each time
                         await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s",
-                                          (conversation_id,))
-                        # gets value for the highest in idx column, so increase by 1 each time adding to table
-                        max_idx_row = await cur.fetchone()  # returns None is no value of id in conversations table
-                        max_idx = int(max_idx_row[0])
-                        next_idx = max_idx + 1
+                                                  (conversation_id,))
 
-                        # transaction to allow two inserts
-                        await cur.execute("BEGIN TRANSACTION")
-                        await cur.execute("SET CONSTRAINTS ALL DEFERRED")
+                        max_idx_dict = await cur.fetchone()
+
+                        if max_idx_dict[0] is None:
+                            # no idx in table so set as 0
+                            max_idx = 0
+                        else:
+                            # gets int value of highest idx value
+                            max_idx = int(max_idx_dict[0])
+
+                        # increment by 1 before adding new row to table
+                        next_idx = max_idx + 1
 
                         # insert role and content into messages table
                         await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
-                                          (message.role, message.content))
+                                              (message.role, message.content))
 
                         # get message id from insert statement
                         message_id_row = await cur.fetchone()
@@ -202,10 +219,6 @@ async def add_messages(new_messages: List[ConversationMessage],
 
                         # insert into conversation history
                         await cur.execute("INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)", (conversation_id, message_id, next_idx,))
-                        await cur.execute("COMMIT")
-                    except:
-                        # if conversation id is not in conversations table
-                        raise HTTPException(status_code=403, detail="You don't have access to this conversation")
 
     # Fetch the max idx for the conversation from the conversation_history table
     async with pool.connection() as conn:
@@ -215,11 +228,12 @@ async def add_messages(new_messages: List[ConversationMessage],
 
             max_idx_dict = await cur.fetchone()
 
-            if cur.fetchone() is None:
-                # if no max idx found, assume its 1
-                max_idx = 1
+            if max_idx_dict['max'] is None:
+                # if no max idx found, assume its 0
+                max_idx = 0
             else:
-                max_idx = max_idx_dict['max']
+                # get int value for highest idx
+                max_idx = int(max_idx_dict['max'])
 
     # If it's the first set of messages, generate a title and update the conversation
     # max idx is 2 when the user and assistant has responded once each,
