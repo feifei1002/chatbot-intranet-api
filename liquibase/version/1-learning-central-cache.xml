@@ -9,7 +9,7 @@
             <column name="username" type="varchar(20)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="cookies" type="text"
+            <column name="cookies" type="text"/>
             <column name="expiry" type="bigint">
                 <constraints nullable="false"/>
             </column>
