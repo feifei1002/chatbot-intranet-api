@@ -31,14 +31,13 @@ class ConversationTitle(BaseModel):
     conversation_title: str
 
 
-async def create_conversation_title(message_history: list[dict]) -> str:
-    messages = message_history.copy()
-
-    # adds question prompt to ask for suggestions
-    messages.append({
+async def create_conversation_title(message_history: ChatHistory) -> str:
+    messages = get_conversation(message_history)
+    messages.append(
+    {
         "role": "user",
-        "content": "Based on the conversation so far, what is a title to summarise this conversation? "  # noqa
-                   "Make sure to format in a JSON object with an array in the key 'title'."  # noqa
+        "content": "Based on the content of this conversation so far, what is a title to summarise the topics of this conversation? "  # noqa
+                   "Make sure to not include this question as a topic, and format the title in a JSON object as an array in the key 'title'."  # noqa
     })
 
     # gets response after asking openapi question
@@ -58,8 +57,7 @@ async def create_conversation_title(message_history: list[dict]) -> str:
 
 
 # function to get conversation history
-# @router.post("/store-conversation")
-async def get_conversation(messages: ChatHistory):
+def get_conversation(messages: ChatHistory) -> list[dict]:
     message_history = []
     # adds each message to the message history, when correct role (user or assistant)
     for message in messages.chat_messages:
@@ -71,8 +69,7 @@ async def get_conversation(messages: ChatHistory):
         else:
             # http exception because invalid role being sent should result in 404 error
             raise HTTPException(status_code=404, detail="Invalid role sent")
-    # print("History:", message_history)
-    # print("User:", messages.user.username)
+
     return message_history
 
 
@@ -106,7 +103,7 @@ async def get_conversation_history(conversation_id: UUID, current_user: Annotate
             await cur.execute("SELECT 1 FROM conversations WHERE username = %s AND id = %s",
                               (current_user.username, conversation_id))
 
-            if cur.fetchone() is None:
+            if await cur.fetchone() is None:
                 raise HTTPException(status_code=403, detail="You don't have access to this conversation")
 
             # Fetch the message content, role and order by conversation_history(idx)
@@ -138,7 +135,7 @@ async def create_conversation(current_user: Annotated[
 
 # After every message
 @router.post("/conversations/{conversation_id}/add_messages")
-async def add_messages(new_messages: List[ConversationMessage],
+async def add_messages(messages: ChatHistory,
                        conversation_id: UUID,
                        current_user: Annotated[
                            Union[AuthenticatedUser],
@@ -154,20 +151,22 @@ async def add_messages(new_messages: List[ConversationMessage],
                 # allow transaction with multiple inserts
                 await cur.execute("SET CONSTRAINTS ALL DEFERRED")
                 # for each new message from assistant and user
-                for message in new_messages:
+                for message in messages.chat_messages:
                     # find out how many values in idx column for the conversation id, so increase my one each time
                     await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s",
                                       (conversation_id,))
 
                     max_idx_dict = await cur.fetchone()
 
-                    if max_idx_dict is None:
-                        # no idx in table so set as 0 and generate a conversation title
-                        next_idx = 0
+                    if max_idx_dict[0] is None:
+                        # no idx in table so set as 0+1 and generate a conversation title
+                        next_idx = 1
                         generate_title = True
                     else:
                         # increment by 1 before adding new row to table
                         next_idx = int(max_idx_dict[0]) + 1
+
+                    # print(message.role)
 
                     # insert role and content into messages table
                     await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
@@ -185,7 +184,7 @@ async def add_messages(new_messages: List[ConversationMessage],
     # If it's the first set of messages, generate a title and update the value in conversations
     if generate_title:
         # generates conversation title
-        conversation_title = await create_conversation_title(new_messages)
+        conversation_title = await create_conversation_title(messages)
 
         # updates current value of title to the new title
         async with pool.connection() as conn:
