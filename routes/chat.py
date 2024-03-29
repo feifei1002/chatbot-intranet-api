@@ -339,6 +339,7 @@ async def chat(
                                         current_user.username,
                                         current_user.cookies
                                     )
+
                                 case _:
                                     raise ValueError(
                                         f"Assistant called unknown function: {name}"
