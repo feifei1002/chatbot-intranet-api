@@ -26,10 +26,12 @@ class ChatHistory(BaseModel):
     chat_messages: list[ConversationMessage]
 
 
-class ConversationTitle(BaseModel):
-    conversation_title: str
+class Conversation(BaseModel):
+    id: UUID
+    title: str
 
 
+# creates a title to summarise the conversation
 async def create_conversation_title(message_history: ChatHistory) -> str:
     messages = get_conversation(message_history)
     messages.append(
@@ -51,11 +53,10 @@ async def create_conversation_title(message_history: ChatHistory) -> str:
     # value was returning ["title"] so added [0] to get the string value instead
     title_string = json.loads(resp.choices[0].message.content)["title"][0]
 
-    # return json.loads(resp.choices[0].message.content)["title"]
     return title_string
 
 
-# function to get conversation history
+# function to set the conversation history and throw an error when invalid role
 def get_conversation(messages: ChatHistory) -> list[dict]:
     message_history = []
     # adds each message to the message history, when correct role (user or assistant)
@@ -72,17 +73,13 @@ def get_conversation(messages: ChatHistory) -> list[dict]:
     return message_history
 
 
-class Conversation(BaseModel):
-    id: UUID
-    title: str
-
-
 # Loads conversations on left side
 @router.get("/conversations", response_model=List[Conversation])
 async def get_conversations(current_user: Annotated[
     Union[AuthenticatedUser],
     Depends(get_current_user)
 ]):
+    # selects the id and title for a given username
     async with pool.connection() as conn:
         async with conn.cursor(row_factory=dict_row) as cur:
             await cur.execute("SELECT id, title FROM conversations "
@@ -93,6 +90,7 @@ async def get_conversations(current_user: Annotated[
             return conversations
 
 
+# gets the conversation history for a given conversation ID
 @router.get("/conversations/{conversation_id}",
             response_model=List[ConversationMessage])
 async def get_conversation_history(conversation_id: UUID,
@@ -138,11 +136,13 @@ async def create_conversation(current_user: Annotated[
             await cur.execute("INSERT INTO conversations (username) "
                               "VALUES (%s) RETURNING id",
                               (username,))
+
+            # returns the conversation ID, so it can be used as a parameter in functions
             conversation_id = await cur.fetchone()
             return {"conversation_id": conversation_id}
 
 
-# After every message
+# adds new messages for a given conversation to the tables
 @router.post("/conversations/{conversation_id}/add_messages")
 async def add_messages(messages: ChatHistory,
                        conversation_id: UUID,
@@ -178,8 +178,6 @@ async def add_messages(messages: ChatHistory,
                         # increment by 1 before adding new row to table
                         next_idx = int(max_idx_dict[0]) + 1
 
-                    # print(message.role)
-
                     # insert role and content into messages table
                     await cur.execute("INSERT INTO messages (role, content) "
                                       "VALUES (%s, %s) RETURNING id",
@@ -196,7 +194,7 @@ async def add_messages(messages: ChatHistory,
                         " VALUES (%s, %s, %s)",
                         (conversation_id, message_id, next_idx,))
 
-    # If it's the first set of messages,
+    # if it's the first set of messages,
     # generate a title and update the value in conversations
     if generate_title:
         # generates conversation title
