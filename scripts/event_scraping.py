@@ -1,10 +1,18 @@
 # Import necessary modules
+import asyncio
+import os
 
 import httpx  # Async HTTP client library
 from bs4 import BeautifulSoup  # Module for web scraping
+from dotenv import load_dotenv
+from llama_index.core import VectorStoreIndex, Document
+from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.vector_stores.qdrant import QdrantVectorStore
 # Base class for creating Pydantic models
 from pydantic import BaseModel
-# Qdrant client for interacting with Qdrant
+from qdrant_client import AsyncQdrantClient
 
 
 class EventModel(BaseModel):
@@ -76,3 +84,59 @@ async def scrape_events(soc_event_url):
     return events_data
 
 
+async def main():
+    events_result = await scrape_events("https://www.cardiffstudents.com/activities/societies/events/")
+    documents = []
+    for event in events_result:
+        doc = Document(text=event.organisation,
+                       metadata={"date": event.date,
+                                 "description": event.description,
+                                 "name": event.name, "time": event.time,
+                                 "location": event.location})
+        documents.append(doc)
+
+    # Initialise embedding model
+    embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
+    embed_model.embed_batch_size = 50
+
+    # Create Qdrant clients
+    aclient = AsyncQdrantClient(
+        url=os.environ.get("QDRANT_URL"),
+        api_key=os.environ.get("QDRANT_API_KEY")
+    )
+
+    # Create Qdrant vector store
+    store = QdrantVectorStore("events", aclient=aclient)
+
+    # Define ingestion pipeline
+    pipeline = IngestionPipeline(
+        transformations=[splitter, embed_model],
+        vector_store=store
+    )
+
+    # Ingest documents into Qdrant
+    await pipeline.arun(show_progress=True, documents=documents)
+
+    # Create index from vector store
+    index = VectorStoreIndex.from_vector_store(vector_store=store,
+                                               embed_model=embed_model,
+                                               use_async=True)
+
+    # Create retriever from index
+    retriever = index.as_retriever(similarity_top_k=3)
+
+    # Perform retrieval query
+    results = await retriever.aretrieve("When is the next yoga event?")
+
+    # Print retrieval result
+    print(results)
+
+if __name__ == "__main__":
+    load_dotenv()
+
+    import nest_asyncio
+
+    nest_asyncio.apply()
+
+    asyncio.run(main())
