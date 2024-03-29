@@ -113,9 +113,11 @@ async def get_conversation_history(conversation_id: UUID,
 
             # Fetch the message content, role and order by conversation_history(idx)
             # and return a dict for converting to List[ConversationMessage]
-            await cur.execute("SELECT messages.content, messages.role FROM conversation_history "
+            await cur.execute("SELECT messages.content, messages.role "
+                              "FROM conversation_history "
                               "JOIN messages ON message_id = id "
-                              "WHERE conversation_id = %s ORDER BY conversation_history.idx",
+                              "WHERE conversation_id = %s "
+                              "ORDER BY conversation_history.idx",
                               (conversation_id,))
 
             history = await cur.fetchall()
@@ -159,7 +161,8 @@ async def add_messages(messages: ChatHistory,
                 await cur.execute("SET CONSTRAINTS ALL DEFERRED")
                 # for each new message from assistant and user
                 for message in messages.chat_messages:
-                    # find out how many values in idx column for the conversation id, so increase my one each time
+                    # find out how many values in idx column for the conversation id,
+                    # so increase my one each time
                     await cur.execute("SELECT MAX(idx) FROM conversation_history "
                                       "WHERE conversation_id = %s",
                                       (conversation_id,))
@@ -167,7 +170,8 @@ async def add_messages(messages: ChatHistory,
                     max_idx_dict = await cur.fetchone()
 
                     if max_idx_dict[0] is None:
-                        # no idx in table so set as 0+1 and generate a conversation title
+                        # no idx in table so set as 0+1 and
+                        # generate a conversation title
                         next_idx = 1
                         generate_title = True
                     else:
@@ -187,11 +191,13 @@ async def add_messages(messages: ChatHistory,
 
                     # insert into conversation history
                     await cur.execute(
-                        "INSERT INTO conversation_history (conversation_id, message_id, idx)"
+                        "INSERT INTO conversation_history "
+                        "(conversation_id, message_id, idx)"
                         " VALUES (%s, %s, %s)",
                         (conversation_id, message_id, next_idx,))
 
-    # If it's the first set of messages, generate a title and update the value in conversations
+    # If it's the first set of messages,
+    # generate a title and update the value in conversations
     if generate_title:
         # generates conversation title
         conversation_title = await create_conversation_title(messages)
@@ -222,8 +228,10 @@ async def delete_conversation(conversation_id: UUID, current_user: Annotated[
             conversation_owner = await cur.fetchone()
             if conversation_owner is None or conversation_owner[0] != username:
                 raise HTTPException(status_code=403,
-                                    detail="You don't have permission to delete this conversation")
-            # Delete the records from the conversation_history table first since it contains foreign keys
+                                    detail="You don't have permission"
+                                           " to delete this conversation")
+            # Delete the records from the conversation_history
+            # table first since it contains foreign keys
             await cur.execute("DELETE FROM conversations WHERE id = %s",
                               (conversation_id,))
             return {"message": "Conversation deleted"}
