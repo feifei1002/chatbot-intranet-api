@@ -12,7 +12,7 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 # Vector store for Qdrant
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 # Qdrant client for interacting with Qdrant
-from qdrant_client import QdrantClient, AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient
 
 from scripts.event_scraping import scrape_events
 
@@ -42,7 +42,7 @@ async def event_scrape_tool(query: str) -> str:
     )
 
     # Create Qdrant vector store
-    store = QdrantVectorStore("events",  aclient=aclient)
+    store = QdrantVectorStore("events", aclient=aclient)
 
     # Define ingestion pipeline
     pipeline = IngestionPipeline(
