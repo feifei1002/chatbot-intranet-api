@@ -44,5 +44,5 @@ app.include_router(conversations.router)
 async def root():
     return {"message": "Hello World"}
 
-FastAPIInstrumentor().instrument_app(app)
 
+FastAPIInstrumentor().instrument_app(app)
