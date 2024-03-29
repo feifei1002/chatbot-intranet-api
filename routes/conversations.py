@@ -1,10 +1,9 @@
 import json
 import os
-from types import NoneType
 from typing import Annotated, Union, List
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Response, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from openai import AsyncOpenAI
 from psycopg.rows import dict_row
 from pydantic import BaseModel
@@ -34,11 +33,11 @@ class ConversationTitle(BaseModel):
 async def create_conversation_title(message_history: ChatHistory) -> str:
     messages = get_conversation(message_history)
     messages.append(
-    {
-        "role": "user",
-        "content": "Based on the conversation so far, what is a title to summarise this conversation? "  # noqa
-                   "Make sure to format in a JSON object with an array in the key 'title'."  # noqa
-    })
+        {
+            "role": "user",
+            "content": "Based on the conversation so far, what is a title to summarise this conversation? "  # noqa
+                       "Make sure to format in a JSON object with an array in the key 'title'."  # noqa
+        })
 
     # gets response after asking openapi question
     resp = await client.chat.completions.create(
@@ -86,31 +85,38 @@ async def get_conversations(current_user: Annotated[
 ]):
     async with pool.connection() as conn:
         async with conn.cursor(row_factory=dict_row) as cur:
-            await cur.execute("SELECT id, title FROM conversations WHERE username = %s", (current_user.username,))
+            await cur.execute("SELECT id, title FROM conversations "
+                              "WHERE username = %s",
+                              (current_user.username,))
             conversations = await cur.fetchall()
 
             return conversations
 
 
-@router.get("/conversations/{conversation_id}", response_model=List[ConversationMessage])
-async def get_conversation_history(conversation_id: UUID, current_user: Annotated[
-    Union[AuthenticatedUser],
-    Depends(get_current_user)
-]):
+@router.get("/conversations/{conversation_id}",
+            response_model=List[ConversationMessage])
+async def get_conversation_history(conversation_id: UUID,
+                                   current_user: Annotated[
+                                       Union[AuthenticatedUser],
+                                       Depends(get_current_user)
+                                   ]):
     async with pool.connection() as conn:
         async with conn.cursor(row_factory=dict_row) as cur:
             # Check if the user and conversation id match from db
-            await cur.execute("SELECT 1 FROM conversations WHERE username = %s AND id = %s",
+            await cur.execute("SELECT 1 FROM conversations "
+                              "WHERE username = %s AND id = %s",
                               (current_user.username, conversation_id))
 
             if await cur.fetchone() is None:
-                raise HTTPException(status_code=403, detail="You don't have access to this conversation")
+                raise HTTPException(status_code=403,
+                                    detail="You don't have access to this conversation")
 
             # Fetch the message content, role and order by conversation_history(idx)
             # and return a dict for converting to List[ConversationMessage]
             await cur.execute("SELECT messages.content, messages.role FROM conversation_history "
                               "JOIN messages ON message_id = id "
-                              "WHERE conversation_id = %s ORDER BY conversation_history.idx", (conversation_id,))
+                              "WHERE conversation_id = %s ORDER BY conversation_history.idx",
+                              (conversation_id,))
 
             history = await cur.fetchall()
 
@@ -127,7 +133,8 @@ async def create_conversation(current_user: Annotated[
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
             # Insert a new conversation into the conversations table
-            await cur.execute("INSERT INTO conversations (username) VALUES (%s) RETURNING id",
+            await cur.execute("INSERT INTO conversations (username) "
+                              "VALUES (%s) RETURNING id",
                               (username,))
             conversation_id = await cur.fetchone()
             return {"conversation_id": conversation_id}
@@ -153,7 +160,8 @@ async def add_messages(messages: ChatHistory,
                 # for each new message from assistant and user
                 for message in messages.chat_messages:
                     # find out how many values in idx column for the conversation id, so increase my one each time
-                    await cur.execute("SELECT MAX(idx) FROM conversation_history WHERE conversation_id = %s",
+                    await cur.execute("SELECT MAX(idx) FROM conversation_history "
+                                      "WHERE conversation_id = %s",
                                       (conversation_id,))
 
                     max_idx_dict = await cur.fetchone()
@@ -169,7 +177,8 @@ async def add_messages(messages: ChatHistory,
                     # print(message.role)
 
                     # insert role and content into messages table
-                    await cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s) RETURNING id",
+                    await cur.execute("INSERT INTO messages (role, content) "
+                                      "VALUES (%s, %s) RETURNING id",
                                       (message.role, message.content))
 
                     # get message id from the above insert statement
@@ -178,7 +187,8 @@ async def add_messages(messages: ChatHistory,
 
                     # insert into conversation history
                     await cur.execute(
-                        "INSERT INTO conversation_history (conversation_id, message_id, idx) VALUES (%s, %s, %s)",
+                        "INSERT INTO conversation_history (conversation_id, message_id, idx)"
+                        " VALUES (%s, %s, %s)",
                         (conversation_id, message_id, next_idx,))
 
     # If it's the first set of messages, generate a title and update the value in conversations
@@ -190,7 +200,8 @@ async def add_messages(messages: ChatHistory,
         async with pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(
-                    "UPDATE conversations SET title = %s WHERE id = %s AND username = %s",
+                    "UPDATE conversations SET title = %s "
+                    "WHERE id = %s AND username = %s",
                     (conversation_title, conversation_id, current_user.username))
 
     return {"message": "Inserted messages successfully"}
@@ -206,10 +217,12 @@ async def delete_conversation(conversation_id: UUID, current_user: Annotated[
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
             # Check if the user own the conversation
-            await cur.execute("SELECT username FROM conversations WHERE id = %s", (conversation_id,))
+            await cur.execute("SELECT username FROM conversations "
+                              "WHERE id = %s", (conversation_id,))
             conversation_owner = await cur.fetchone()
             if conversation_owner is None or conversation_owner[0] != username:
-                raise HTTPException(status_code=403, detail="You don't have permission to delete this conversation")
+                raise HTTPException(status_code=403,
+                                    detail="You don't have permission to delete this conversation")
             # Delete the records from the conversation_history table first since it contains foreign keys
             await cur.execute("DELETE FROM conversations WHERE id = %s",
                               (conversation_id,))

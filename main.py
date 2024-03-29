@@ -37,8 +37,11 @@ app.include_router(chat.router)
 app.include_router(text_to_speech.router)
 app.include_router(authentication.router)
 app.include_router(suggested_questions.router)
+app.include_router(conversations.router)
 
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+FastAPIInstrumentor().instrument_app(app)
