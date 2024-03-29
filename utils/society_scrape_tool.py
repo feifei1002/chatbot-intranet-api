@@ -23,7 +23,7 @@ aclient = AsyncQdrantClient(
     api_key=os.environ.get("QDRANT_API_KEY")
 )
 
-store = QdrantVectorStore("intranet", aclient=aclient)
+store = QdrantVectorStore("societies", aclient=aclient)
 
 embed_model = OpenAIEmbedding(model="text-embedding-3-large")
 
