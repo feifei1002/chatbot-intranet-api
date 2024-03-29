@@ -7,7 +7,7 @@ client = TestClient(app)
 
 def test_transcription():
     # Checks if .wav file exists.
-    file_name = 'gojo.wav'
+    file_name = 'tests/gojo.wav'
     assert os.path.exists(file_name), f"File '{file_name}' does not exist."
 
     # Reads .wav file and stores contents in "audio_blob"
