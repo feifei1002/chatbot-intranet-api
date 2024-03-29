@@ -10,13 +10,7 @@ from sse_starlette import EventSourceResponse, ServerSentEvent
 
 from routes.authentication import get_current_user_optional, AuthenticatedUser
 from utils import intranet_search_tool, uni_website_search_tool, \
-<<<<<<< HEAD
-    timetable_tool, learning_central_tool, event_scrape_tool
-from utils import intranet_search_tool, uni_website_search_tool, society_scrape_tool
-=======
-    timetable_tool, learning_central_tool, society_scrape_tool, \
-                   event_scrape_tool
->>>>>>> 389117c (slight bug fix)
+    timetable_tool, learning_central_tool, society_scrape_tool, event_scrape_tool
 from utils.models import ConversationMessage
 
 router = APIRouter()

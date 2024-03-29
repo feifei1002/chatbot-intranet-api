@@ -1,7 +1,17 @@
+import asyncio
+import os
+
 import httpx  # Async HTTP client library
 from bs4 import BeautifulSoup  # Module for web scraping
+from dotenv import load_dotenv
+from llama_index.core import VectorStoreIndex, Document
+from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.vector_stores.qdrant import QdrantVectorStore
 # Base class for creating Pydantic models
 from pydantic import BaseModel
+from qdrant_client import AsyncQdrantClient
 
 
 class SocietyModel(BaseModel):
@@ -32,7 +42,7 @@ async def scrape_content(url):
         response = await client.get(url)
         soup = BeautifulSoup(response.text, 'html.parser')
 
-    soc_title = soup.find('#main-content\ container > div > div.flex.mb-1\.5.mslwidget.p-10.rounded.text-union-pink.font-union-bold.text-xl > div > ul > li > a')
+    soc_title = soup.find('h1')
     if soc_title:
         society_name = soc_title.get_text(strip=True)
     else:
@@ -51,4 +61,67 @@ async def scrape_content(url):
         link=url  # Pass the URL as the link field
     )
     # Wrap the society_data in a list before returning
-    return [society_data]
+    return society_data
+
+
+async def main():
+    # Fetch links asynchronously
+    scraped_links = await scrape_links()
+
+    # Asynchronously scrape content from each link
+    tasks = [scrape_content(link) for link in scraped_links]
+    societies_results = await asyncio.gather(*tasks)
+
+    # Create Document objects for each society
+    documents = []
+    for society in societies_results:
+        doc = Document(
+            text=society.organisation,
+            metadata={"content": society.content, "URL": society.link}
+        )
+        documents.append(doc)
+
+    # OpenAI Model works but needs a little tweaking
+    embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=20)
+    embed_model.embed_batch_size = 50
+
+    aclient = AsyncQdrantClient(
+        url=os.environ.get("QDRANT_URL"),
+        api_key=os.environ.get("QDRANT_API_KEY")
+    )
+
+    # Create Qdrant vector store
+    store = QdrantVectorStore("societies", aclient=aclient)
+
+    # Define ingestion pipeline
+    pipeline = IngestionPipeline(
+        transformations=[splitter, embed_model],
+        vector_store=store
+    )
+
+    # Ingest documents into Qdrant
+    await pipeline.arun(show_progress=True, documents=documents)
+
+    # Create index from vector store
+    index = VectorStoreIndex.from_vector_store(vector_store=store,
+                                               embed_model=embed_model,
+                                               use_async=True)
+
+    # Create retriever from index
+    retriever = index.as_retriever(similarity_top_k=3)
+
+    # Perform retrieval query
+    results = await retriever.aretrieve("Get me information on the yoga society")
+
+    print(results)
+
+if __name__ == "__main__":
+    load_dotenv()
+
+    import nest_asyncio
+
+    nest_asyncio.apply()
+
+    asyncio.run(main())
+
