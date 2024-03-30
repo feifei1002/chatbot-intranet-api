@@ -26,7 +26,8 @@ async def search_uni_website(query: str) -> str:
         ],
         documents=documents,
     )
-    nodes = await pipeline.arun(show_progress=True)[:100]
+    nodes = await pipeline.arun(show_progress=True)
+    nodes = nodes[:100]
 
     # Convert to NodeWithScore
     nodes = [NodeWithScore(node=node) for node in nodes]
