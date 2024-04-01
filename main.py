@@ -6,7 +6,7 @@ from honeycomb.opentelemetry import configure_opentelemetry
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 
 from routes import authentication
-from routes import chat, suggested_questions, text_to_speech
+from routes import chat, suggested_questions, text_to_speech, admin_chat
 from utils import db
 
 configure_opentelemetry()
@@ -35,6 +35,7 @@ app.include_router(chat.router)
 app.include_router(text_to_speech.router)
 app.include_router(authentication.router)
 app.include_router(suggested_questions.router)
+app.include_router(admin_chat.router)
 
 
 @app.get("/")
