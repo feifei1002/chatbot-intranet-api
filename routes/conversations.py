@@ -157,6 +157,14 @@ async def add_messages(messages: ChatHistory,
     async with pool.connection() as conn:
         async with conn.transaction():
             async with conn.cursor() as cur:
+                # Check if the user own the conversation
+                await cur.execute("SELECT username FROM conversations "
+                                "WHERE id = %s", (conversation_id,))
+                conversation_owner = await cur.fetchone()
+                if conversation_owner is None or conversation_owner[0] != username:
+                    raise HTTPException(status_code=403,
+                                        detail="You don't have permission"
+                                            " to delete this conversation")
                 # allow transaction with multiple inserts
                 await cur.execute("SET CONSTRAINTS ALL DEFERRED")
                 # for each new message from assistant and user
