@@ -152,7 +152,6 @@ async def add_messages(messages: ChatHistory,
                        ]):
     # only generate a title when there are no values in conversation_history for the id
     generate_title = False
-    
     username = current_user.username
     # insert into conversation_history and messages
     async with pool.connection() as conn:
