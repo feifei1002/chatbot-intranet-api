@@ -1,5 +1,4 @@
 import os
-
 from utils.db import pool
 from fastapi import APIRouter
 import anthropic
@@ -19,10 +18,7 @@ async def get_user_questions():
             return result
 
 
-@router.get("/admin_chat")
-async def admin_chat():
-    user_questions = await get_user_questions()
-
+async def setup_tool_description(user_questions):
     tool_description = f"""
     <tool_description>
         <tool_name>get_user_questions</tool_name>
@@ -35,6 +31,10 @@ async def admin_chat():
         </parameters>
     </tool_description>
     """
+    return tool_description
+
+
+async def setup_system_prompt(tool):
     system_prompt = f"""
     In this environment you have access to a set of tools you can use to generate analytics for the admin of a chatbot. 
     
@@ -50,17 +50,57 @@ async def admin_chat():
     </function_calls>
     
     Here are the tools available:
-    <tools>{tool_description}</tools>
+    <tools>{tool}</tools>
     """
+
+    return system_prompt
+
+
+async def admin_chat(question):
+    user_questions = await get_user_questions()
+    tool = await setup_tool_description(user_questions)
+    prompt = await setup_system_prompt(tool)
 
     function_calling_message = client.messages.create(
         model="claude-3-opus-20240229",
         max_tokens=1024,
-        messages=[
-            {"role": "user",
-             "content": "What are the 10 most asked questions?"
-             }],
-        system=system_prompt
+        messages=[question],
+        system=prompt
     ).content[0].text
-
     print(function_calling_message)
+    return function_calling_message
+
+
+@router.get("/10_most_asked_questions")
+async def get_10_most_asked_questions():
+    question = {
+        "role": "user",
+        "content": "What are the 10 most asked questions in general?"
+    }
+    response = await admin_chat(question)
+    print(response)
+    return response
+
+
+@router.get("/5_most_asked_questions_uni_website")
+async def get_5_most_asked_questions_uni_website():
+    question = {
+        "role": "user",
+        "content": "What are the 5 most asked questions related to the University's website?"
+    }
+    response = await admin_chat(question)
+    print(response)
+    return response
+
+
+@router.get("/5_most_asked_questions_student_life")
+async def get_5_most_asked_questions_intranet():
+    question = {
+        "role": "user",
+        "content": "What are the 5 most asked questions related to the student life?"
+    }
+    response = await admin_chat(question)
+    print(response)
+    return response
+
+
