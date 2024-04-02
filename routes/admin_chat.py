@@ -78,7 +78,6 @@ async def get_10_most_asked_questions():
         "content": "What are the 10 most asked questions in general?"
     }
     response = await admin_chat(question)
-    print(response)
     return response
 
 
@@ -89,7 +88,6 @@ async def get_5_most_asked_questions_uni_website():
         "content": "What are the 5 most asked questions related to the University's website?"
     }
     response = await admin_chat(question)
-    print(response)
     return response
 
 
@@ -100,7 +98,6 @@ async def get_5_most_asked_questions_intranet():
         "content": "What are the 5 most asked questions related to the student life?"
     }
     response = await admin_chat(question)
-    print(response)
     return response
 
 
