@@ -38,7 +38,7 @@ async def create_conversation_title(message_history: ChatHistory) -> str:
         {
             "role": "user",
             "content": "Based on the conversation so far, what is a title to summarise this conversation? "  # noqa
-                       "Make sure to format in a JSON object with an array in the key 'title'."  # noqa
+                       "Make sure to format in a JSON object with an array in the key 'title' for the string."  # noqa
         })
 
     # gets response after asking openapi question
