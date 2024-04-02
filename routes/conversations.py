@@ -50,8 +50,8 @@ async def create_conversation_title(message_history: ChatHistory) -> str:
         }
     )
 
-    # value was returning ["title"] so added [0] to get the string value instead
-    title_string = json.loads(resp.choices[0].message.content)["title"][0]
+    # Get the string value
+    title_string = json.loads(resp.choices[0].message.content)["title"]
 
     return title_string
 
