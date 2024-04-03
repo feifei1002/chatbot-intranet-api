@@ -6,5 +6,6 @@
 
     <include file="version/0-create-ical-cache.xml" relativeToChangelogFile="true"/>
     <include file="version/1-learning-central-cache.xml" relativeToChangelogFile="true"/>
-
+    <include file="version/2-create-conversations.xml" relativeToChangelogFile="true"/>
+    <include file="version/3-learning-central.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
