@@ -34,12 +34,11 @@ class Conversation(BaseModel):
 # creates a title to summarise the conversation
 async def create_conversation_title(message_history: ChatHistory) -> str:
     messages = get_conversation(message_history)
-    messages.append(
-        {
-            "role": "user",
-            "content": "Based on the conversation so far, what is a title to summarise this conversation? "  # noqa
-                       "Make sure to format in a JSON object with an array in the key 'title' for the string."  # noqa
-        })
+    messages.append({
+        "role": "user",
+        "content": "Based on the conversation so far, what is a title to summarise this conversation? "  # noqa
+                   "Make sure to format your response in a JSON object with the key 'title' for the string."  # noqa
+    })
 
     # gets response after asking openapi question
     resp = await client.chat.completions.create(
