@@ -34,12 +34,11 @@ class Conversation(BaseModel):
 # creates a title to summarise the conversation
 async def create_conversation_title(message_history: ChatHistory) -> str:
     messages = get_conversation(message_history)
-    messages.append(
-        {
-            "role": "user",
-            "content": "Based on the conversation so far, what is a title to summarise this conversation? "  # noqa
-                       "Make sure to format in a JSON object with an array in the key 'title' for the string."  # noqa
-        })
+    messages.append({
+        "role": "user",
+        "content": "Based on the conversation so far, what is a title to summarise this conversation? "  # noqa
+                   "Make sure to format your response in a JSON object with the key 'title' for the string."  # noqa
+    })
 
     # gets response after asking openapi question
     resp = await client.chat.completions.create(
@@ -50,8 +49,8 @@ async def create_conversation_title(message_history: ChatHistory) -> str:
         }
     )
 
-    # value was returning ["title"] so added [0] to get the string value instead
-    title_string = json.loads(resp.choices[0].message.content)["title"][0]
+    # Get the string value
+    title_string = json.loads(resp.choices[0].message.content)["title"]
 
     return title_string
 
@@ -159,12 +158,12 @@ async def add_messages(messages: ChatHistory,
             async with conn.cursor() as cur:
                 # Check if the user own the conversation
                 await cur.execute("SELECT username FROM conversations "
-                                "WHERE id = %s", (conversation_id,))
+                                  "WHERE id = %s", (conversation_id,))
                 conversation_owner = await cur.fetchone()
                 if conversation_owner is None or conversation_owner[0] != username:
                     raise HTTPException(status_code=403,
                                         detail="You don't have permission"
-                                            " to delete this conversation")
+                                               " to delete this conversation")
                 # allow transaction with multiple inserts
                 await cur.execute("SET CONSTRAINTS ALL DEFERRED")
                 # for each new message from assistant and user
