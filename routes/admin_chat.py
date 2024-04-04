@@ -1,4 +1,6 @@
 import os
+import re
+
 from utils.db import pool
 from fastapi import APIRouter
 import anthropic
@@ -8,7 +10,7 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
-async def get_user_questions():
+async def get_user_questions(user_questions):
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
             await cur.execute(
@@ -18,57 +20,78 @@ async def get_user_questions():
             return result
 
 
-async def setup_tool_description(user_questions):
-    tool_description = f"""
-    <tool_description>
-        <tool_name>get_user_questions</tool_name>
-        <description>
-            Function for getting all the questions asked by users.  
+tool_description = f"""
+<tool_description>
+    <tool_name>get_user_questions</tool_name>
+    <description>
+        Function for getting all the questions asked by users.  
+    <parameters>
+        <parameter>
+            <name>user_questions</name>
+            <type>str</type>
+            <description>Questions asked by users</description>
+        </parameter>
+    </parameters>
+</tool_description>
+"""
+
+
+system_prompt = f"""
+In this environment you have access to a set of tools you can use to generate analytics for the admin of a chatbot. 
+
+You may call them like this:
+<function_calls>
+    <invoke>
+        <tool_name>$TOOL_NAME</tool_name>
         <parameters>
-            <parameter>
-                f"{user_questions}"
-            </parameter>
+            <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
+            ...
         </parameters>
-    </tool_description>
-    """
-    return tool_description
+    </invoke>
+</function_calls>
 
-
-async def setup_system_prompt(tool):
-    system_prompt = f"""
-    In this environment you have access to a set of tools you can use to generate analytics for the admin of a chatbot. 
-    
-    You may call them like this:
-    <function_calls>
-        <invoke>
-            <tool_name>$TOOL_NAME</tool_name>
-            <parameters>
-                <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
-                ...
-            </parameters>
-        </invoke>
-    </function_calls>
-    
-    Here are the tools available:
-    <tools>{tool}</tools>
-    """
-
-    return system_prompt
+Here are the tools available:
+<tools>{tool_description}</tools>
+"""
 
 
 async def admin_chat(question):
-    user_questions = await get_user_questions()
-    tool = await setup_tool_description(user_questions)
-    prompt = await setup_system_prompt(tool)
-
     function_calling_message = client.messages.create(
         model="claude-3-opus-20240229",
         max_tokens=1024,
         messages=[question],
-        system=prompt
+        system=system_prompt,
     ).content[0].text
-    print(function_calling_message)
-    return function_calling_message
+    function_params = {"user_questions": extract_between_tags("user_questions", function_calling_message)[0]}
+    function_name = extract_between_tags("tool_name", function_calling_message)[0]
+    names_to_functions = {'get_user_questions': get_user_questions}
+    answer = await names_to_functions[function_name](**function_params)
+    function_results = f"""
+        <function_results>
+          <result>
+            <tool_name>get_stock_price</tool_name>
+            <stdout>{answer}</stdout>
+          </result>
+        </function_results>"""
+    partial_assistant_message = function_calling_message + function_results
+    final_message = client.messages.create(
+        model="claude-3-opus-20240229",
+        max_tokens=1024,
+        messages=[question,
+                  {
+                      "role": "assistant",
+                      "content": partial_assistant_message
+                  }
+                  ],
+        system=system_prompt,
+    ).content[0].text
+    print("\n\n##### After Function Calling #####" + final_message)
+    return final_message
+
+
+def extract_between_tags(tag, string, strip=False):
+    ext_list = re.findall(f"<{tag}>(.*?)</{tag}>", string, re.DOTALL)
+    return [e.strip() for e in ext_list] if strip else ext_list
 
 
 @router.get("/10_most_asked_questions")
@@ -99,5 +122,3 @@ async def get_5_most_asked_questions_intranet():
     }
     response = await admin_chat(question)
     return response
-
-
