@@ -24,7 +24,8 @@ tool_description = f"""
 <tool_description>
     <tool_name>get_user_questions</tool_name>
     <description>
-        Function for getting all the questions asked by users.  
+        Function for getting all the questions asked by users.
+    </description>
     <parameters>
         <parameter>
             <name>user_questions</name>
@@ -37,7 +38,8 @@ tool_description = f"""
 
 
 system_prompt = f"""
-In this environment you have access to a set of tools you can use to generate analytics for the admin of a chatbot. 
+In this environment you have access to a set of tools 
+you can use to generate analytics for the admin of a chatbot.
 
 You may call them like this:
 <function_calls>
@@ -62,15 +64,16 @@ async def admin_chat(question):
         messages=[question],
         system=system_prompt,
     ).content[0].text
-    function_params = {"user_questions": extract_between_tags("user_questions", function_calling_message)[0]}
+    function_params = {"user_questions": extract_between_tags("user_questions",
+                                                              function_calling_message)[0]}
     function_name = extract_between_tags("tool_name", function_calling_message)[0]
     names_to_functions = {'get_user_questions': get_user_questions}
-    answer = await names_to_functions[function_name](**function_params)
+    response = await names_to_functions[function_name](**function_params)
     function_results = f"""
         <function_results>
           <result>
-            <tool_name>get_stock_price</tool_name>
-            <stdout>{answer}</stdout>
+            <tool_name>get_user_questions</tool_name>
+            <stdout>{response}</stdout>
           </result>
         </function_results>"""
     partial_assistant_message = function_calling_message + function_results
@@ -108,7 +111,8 @@ async def get_10_most_asked_questions():
 async def get_5_most_asked_questions_uni_website():
     question = {
         "role": "user",
-        "content": "What are the 5 most asked questions related to the University's website?"
+        "content": "What are the 5 most asked questions "
+                   "related to the University's website?"
     }
     response = await admin_chat(question)
     return response
