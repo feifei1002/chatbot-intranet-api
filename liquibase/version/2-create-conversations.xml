@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="2-0" author="fei" dbms="postgresql">
+        <createTable tableName="conversations">
+            <column name="id" type="uuid" defaultValue="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="varchar(200)" defaultValue="untitled">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="conversations" indexName="conversations_username">
+            <column name="username"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="2-1" author="fei" dbms="postgresql">
+        <createTable tableName="messages">
+            <column name="id" type="uuid" defaultValue="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="role" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2-2" author="fei" dbms="postgresql">
+        <createTable tableName="conversation_history">
+            <column name="conversation_id" type="uuid">
+                <constraints primaryKey="true"
+                             nullable="false"
+                             foreignKeyName="fk_conversation_history_conversation"
+                             references="conversations(id)"
+                             deleteCascade="true"
+                />
+            </column>
+            <column name="message_id" type="uuid">
+                <constraints primaryKey="true"
+                             nullable="false"
+                             foreignKeyName="fk_conversation_history_messages"
+                             references="messages(id)"
+                             deleteCascade="true"
+                />
+            </column>
+            <column name="idx" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2-3" author="kavin">
+        <!-- fk to delete messages when conversation is deleted -->
+        <addUniqueConstraint tableName="conversation_history" columnNames="message_id"/>
+        <addForeignKeyConstraint
+                baseTableName="messages"
+                baseColumnNames="id"
+                constraintName="fk_messages_conversation_history"
+                referencedTableName="conversation_history"
+                referencedColumnNames="message_id"
+                deleteCascade="true"
+                deferrable="true"
+        />
+    </changeSet>
+</databaseChangeLog>

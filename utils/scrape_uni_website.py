@@ -19,7 +19,7 @@ async def duckduckgo_search(query) -> list[str]:
         results = await addgs.text(
             f"{query} site:cardiff.ac.uk",
             safesearch='off',
-            timelimit='n', backend="api",
+            timelimit='n', backend="html",
             max_results=10
         )
 

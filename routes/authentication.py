@@ -146,3 +146,18 @@ async def get_current_user_optional(
     except JWTError:
         # Someone is tampering with the token
         raise credentials_exception
+
+
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> AuthenticatedUser:
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    user = await get_current_user_optional(token)
+
+    if not user:
+        raise credentials_exception
+
+    return user
