@@ -95,10 +95,12 @@ async def session(token: str = Depends(oauth2_scheme)):
         async with pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute("SELECT 1 FROM admins WHERE username = %s", (username,))
-                is_admin = cur.fetchone() is not None
+                is_admin = (await cur.fetchone()) is not None
+                print(is_admin)
 
         return {
             "admin": is_admin,
+            "name": username,
             "valid": True,
             # We just check if it's < 5 minutes from expiring
             "needs_refresh": payload.get("exp") < (
