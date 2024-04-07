@@ -94,7 +94,9 @@ async def session(token: str = Depends(oauth2_scheme)):
 
         async with pool.connection() as conn:
             async with conn.cursor() as cur:
-                await cur.execute("SELECT 1 FROM admins WHERE username = %s", (username,))
+                await cur.execute("SELECT 1 FROM admins "
+                                  "WHERE username = %s",
+                                  (username,))
                 is_admin = (await cur.fetchone()) is not None
 
         return {
