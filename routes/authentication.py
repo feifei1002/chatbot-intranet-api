@@ -9,6 +9,7 @@ from jose import jwt, JWTError
 from pydantic import BaseModel
 
 from utils.auth_helper import login, UniCredentials, BadCredentialsException
+from utils.db import pool
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
@@ -91,7 +92,15 @@ async def session(token: str = Depends(oauth2_scheme)):
         if payload.get("exp") < datetime.utcnow().timestamp():
             raise credentials_exception
 
+        async with pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT 1 FROM admins "
+                                  "WHERE username = %s",
+                                  (username,))
+                is_admin = (await cur.fetchone()) is not None
+
         return {
+            "admin": is_admin,
             "valid": True,
             # We just check if it's < 5 minutes from expiring
             "needs_refresh": payload.get("exp") < (
