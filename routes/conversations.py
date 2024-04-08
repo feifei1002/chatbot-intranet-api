@@ -137,7 +137,7 @@ async def create_conversation(current_user: Annotated[
                               (username,))
 
             # returns the conversation ID, so it can be used as a parameter in functions
-            conversation_id = await cur.fetchone()
+            conversation_id = (await cur.fetchone())[0]
             return {"conversation_id": conversation_id}
 
 
