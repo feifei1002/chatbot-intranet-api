@@ -97,19 +97,6 @@ async def get_conversation_history(conversation_id: UUID,
                                        Union[AuthenticatedUser],
                                        Depends(get_current_user)
                                    ]):
-    # if trying to access a public conversation when not the username who created it
-    # if exc.status_code == 401:
-    #     print("401 error handled")
-    #     async with pool.connection() as conn:
-    #         async with conn.cursor(row_factory=dict_row) as cur:
-    #             await cur.execute("SELECT 1 FROM conversations "
-    #                               "WHERE privacy = %s AND id = %s",
-    #                               ("public", conversation_id))
-    #             if await cur.fetchone() is not None:
-    #                 print("convo is public")
-    #             else:
-    #                 print("convo not available")
-
     async with pool.connection() as conn:
         async with conn.cursor(row_factory=dict_row) as cur:
             # Check if the user and conversation id match from db
@@ -118,14 +105,15 @@ async def get_conversation_history(conversation_id: UUID,
                               (current_user.username, conversation_id))
 
             if await cur.fetchone() is None:
+                # conversation is possibly created by another user,
+                # so check if the conversation is public
                 await cur.execute("SELECT 1 FROM conversations "
                                   "WHERE privacy = %s AND id = %s",
                                   ("public", conversation_id))
                 if await cur.fetchone() is None:
-                    # conversation not public or not created
+                    # conversation is not public or not created
                     raise HTTPException(status_code=403,
-                                        detail="You don't have access to this conversation")
-                # conversation is public but created by another authenticated user
+                                        detail="You don't have access to this conversation")  # noqa
 
             # Fetch the message content, role and order by conversation_history(idx)
             # and return a dict for converting to List[ConversationMessage]
@@ -277,33 +265,3 @@ async def set_conversation_privacy_public(conversation_id: UUID,
                               ("public", conversation_id, current_user.username))
 
             return {"Successfully changes privacy of conversation to public."}
-
-# @router.post("/conversations/{conversation_id}/access_public")
-# async def set_conversation_privacy_public(conversation_id: UUID):
-#     async with pool.connection() as conn:
-#         async with conn.cursor(row_factory=dict_row) as cur:
-#             await cur.execute("SELECT 1 FROM conversations "
-#                               "WHERE privacy = %s AND id = %s",
-#                               ("public", conversation_id))
-#             if await cur.fetchone() is not None:
-#                 print("convo is public")
-#
-#                 # Fetch the message content, role and order by conversation_history(idx)
-#                 # and return a dict for converting to List[ConversationMessage]
-#                 await cur.execute("SELECT messages.content, messages.role "
-#                                   "FROM conversation_history "
-#                                   "JOIN messages ON message_id = id "
-#                                   "WHERE conversation_id = %s "
-#                                   "ORDER BY conversation_history.idx",
-#                                   (conversation_id,))
-#
-#                 history = await cur.fetchall()
-#
-#                 return history
-#             else:
-#                 print("convo not available")
-
-# def handle_401(response):
-#     if response.status_code == 401:
-#         print("401")
-#     print("not 401")
