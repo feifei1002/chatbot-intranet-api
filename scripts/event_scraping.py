@@ -132,6 +132,7 @@ async def main():
     # Print retrieval result
     print(results)
 
+
 if __name__ == "__main__":
     load_dotenv()
 

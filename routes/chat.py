@@ -117,14 +117,16 @@ async def chat(
             "type": "function",
             "function": {
                 "name": "search_society",
-                "description": "Search information about Cardiff Univeristy Societies, to help answer the user's query",
+                "description": "Search information about Cardiff Univeristy Societies,"
+                               " to help answer the user's query",
                 # noqa
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The question to search for about the societies on the Student Union Website",
+                            "description": "The question to search for about "
+                                           "the societies on the Student Union Website",
                             # noqa
                         }
                     },

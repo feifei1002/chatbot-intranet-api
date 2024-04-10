@@ -2,12 +2,9 @@ import asyncio
 import json
 import os  # Module for operating system related functionalities
 
-from llama_index.core import Document
 from llama_index.core import VectorStoreIndex  # Vector store index from llama_index
 # Ingestion pipeline for document processing
-from llama_index.core.ingestion import IngestionPipeline
 # Sentence splitter for chunking text
-from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import MetadataMode
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.postprocessor.cohere_rerank import CohereRerank
@@ -16,7 +13,6 @@ from llama_index.vector_stores.qdrant import QdrantVectorStore
 # Qdrant client for interacting with Qdrant
 from qdrant_client import AsyncQdrantClient
 
-from scripts.event_scraping import scrape_events
 
 if not os.environ.get("QDRANT_URL"):
     raise ValueError("QDRANT_URL environment variable not set")
