@@ -7,9 +7,6 @@
     <include file="version/0-create-ical-cache.xml" relativeToChangelogFile="true"/>
     <include file="version/1-learning-central-cache.xml" relativeToChangelogFile="true"/>
     <include file="version/2-create-conversations.xml" relativeToChangelogFile="true"/>
-    <!--  is the line below meant to be called that?  -->
-    <include file="version/3-learning-central.xml" relativeToChangelogFile="true"/>
-    <!-- end of question -->
     <include file="version/3-admin-page.xml" relativeToChangelogFile="true"/>
     <!-- ayman's branch .xml file goes here -->
     <include file="version/5-share-conversations.xml" relativeToChangelogFile="true" />
