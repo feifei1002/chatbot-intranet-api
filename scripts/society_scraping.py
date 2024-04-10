@@ -116,6 +116,7 @@ async def main():
 
     print(results)
 
+
 if __name__ == "__main__":
     load_dotenv()
 
