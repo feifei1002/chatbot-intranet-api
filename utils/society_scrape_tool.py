@@ -2,7 +2,6 @@ import asyncio
 import json
 import os  # Module for operating system related functionalities
 
-from llama_index.core import Document
 from llama_index.core import VectorStoreIndex  # Vector store index from llama_index
 from llama_index.core.schema import MetadataMode
 from llama_index.embeddings.openai import OpenAIEmbedding
@@ -10,7 +9,7 @@ from llama_index.postprocessor.cohere_rerank import CohereRerank
 # Vector store for Qdrant
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 # Qdrant client for interacting with Qdrant
-from qdrant_client import QdrantClient, AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient
 
 # throw Exception if the environment variables are not set
 if not os.environ.get("QDRANT_URL"):
