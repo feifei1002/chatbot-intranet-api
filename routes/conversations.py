@@ -242,12 +242,14 @@ async def delete_conversation(conversation_id: UUID, current_user: Annotated[
             return {"message": "Conversation deleted"}
 
 
-# when sharing a conversation set its visibility to public, so it can be shared to other users
+# when sharing a conversation set its visibility to public,
+# so it can be shared to other users
 @router.post("/conversations/{conversation_id}/set_public")
-async def set_conversation_privacy_public(conversation_id: UUID, current_user: Annotated[
-    Union[AuthenticatedUser],
-    Depends(get_current_user)
-]):
+async def set_conversation_privacy_public(conversation_id: UUID,
+                                          current_user: Annotated[
+                                              Union[AuthenticatedUser],
+                                              Depends(get_current_user)
+                                          ]):
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
             # update the value of privacy from 'private' to 'public'
