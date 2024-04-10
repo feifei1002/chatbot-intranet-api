@@ -72,4 +72,11 @@
                 deferrable="true"
         />
     </changeSet>
+
+    <changeSet id="2-4" author="alex">
+        <!-- add new column to define if conversation is private or public, used when sharing a conversation -->
+        <addColumn tableName="conversations">
+            <column name="privacy" type="varchar(20)" defaultValue="private"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>
