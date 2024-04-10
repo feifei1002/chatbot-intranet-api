@@ -8,7 +8,8 @@ from openai import AsyncOpenAI
 from psycopg.rows import dict_row
 from pydantic import BaseModel
 
-from routes.authentication import AuthenticatedUser, get_current_user
+from routes.authentication import (AuthenticatedUser, get_current_user,
+                                   get_current_user_optional)
 from utils.db import pool
 from utils.models import ConversationMessage
 
@@ -95,27 +96,37 @@ async def get_conversations(current_user: Annotated[
 async def get_conversation_history(conversation_id: UUID,
                                    current_user: Annotated[
                                        Union[AuthenticatedUser],
-                                       Depends(get_current_user)
+                                       Depends(get_current_user_optional)
                                    ]):
     async with pool.connection() as conn:
         async with conn.cursor(row_factory=dict_row) as cur:
-            # Check if the user and conversation id match from db
-            await cur.execute("SELECT 1 FROM conversations "
-                              "WHERE username = %s AND id = %s",
-                              (current_user.username, conversation_id))
-
-            if await cur.fetchone() is None:
-                # conversation is possibly created by another user,
-                # so check if the conversation is public
+            try:
+                # check if the username and conversation id match from db,
+                # when the user is logged in
                 await cur.execute("SELECT 1 FROM conversations "
-                                  "WHERE privacy = %s AND id = %s",
-                                  ("public", conversation_id))
-                if await cur.fetchone() is None:
-                    # conversation is not public or not created
-                    raise HTTPException(status_code=403,
-                                        detail="You don't have access to this conversation")  # noqa
+                                  "WHERE username = %s AND id = %s",
+                                  (current_user.username, conversation_id))
+            except AttributeError:
+                # if there is no username because the user is not logged in,
+                # just select using id to check conversation exists
+                await cur.execute("SELECT 1 FROM conversations "
+                                  "WHERE id = %s",
+                                  (conversation_id,))
+            finally:
+                # checks if invalid conversation id or if not authenticated user
+                if await cur.fetchone() is None or current_user is None:
+                    # conversation is possibly created by another user,
+                    # so check if the conversation is public
+                    await cur.execute("SELECT 1 FROM conversations "
+                                      "WHERE privacy = %s AND id = %s",
+                                      ("public", conversation_id))
 
-            # Fetch the message content, role and order by conversation_history(idx)
+                    if await cur.fetchone() is None:
+                        # conversation is not public or not a valid id
+                        raise HTTPException(status_code=403,
+                                            detail="You don't have access to this conversation")  # noqa
+
+            # fetch the message content, role and order by conversation_history(idx)
             # and return a dict for converting to List[ConversationMessage]
             await cur.execute("SELECT messages.content, messages.role "
                               "FROM conversation_history "
