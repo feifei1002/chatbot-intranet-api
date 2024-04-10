@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="4-0" author="ayman" dbms="postgresql">
+        <!-- Create 'feedback' table -->
+        <createTable tableName="feedback">
+            <column name="message_id" type="uuid"/>
+            <column name="is_positive" type="boolean"/>
+        </createTable>
+        
+        <!-- Add Foreign Key Constraint -->
+        <addForeignKeyConstraint
+            baseTableName="feedback"
+            baseColumnNames="message_id"
+            constraintName="fk_feedback_message_id"
+            referencedTableName="messages"
+            referencedColumnNames="id"
+            onDelete="CASCADE"
+            onUpdate="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>
