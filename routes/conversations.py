@@ -102,13 +102,16 @@ async def get_conversation_history(conversation_id: UUID,
         async with conn.cursor(row_factory=dict_row) as cur:
             if current_user is None:
                 # if there is no username because the user is not logged in,
-                # select using id and must be public conversation, and check conversation exists
-                await cur.execute("SELECT 1 FROM conversations WHERE privacy = 'public' AND id = %s",
+                # select using id and must be public conversation,
+                # and check conversation exists
+                await cur.execute("SELECT 1 FROM conversations "
+                                  "WHERE privacy = 'public' AND id = %s",
                                   (conversation_id,))
             else:
                 # check if the username and conversation id match from database,
                 # when the user is logged in
-                await cur.execute("SELECT 1 FROM conversations WHERE (username = %s OR privacy = 'public') AND id = %s",
+                await cur.execute("SELECT 1 FROM conversations WHERE "
+                                  "(username = %s OR privacy = 'public') AND id = %s",
                                   (current_user.username, conversation_id))
 
             if await cur.fetchone() is None:
