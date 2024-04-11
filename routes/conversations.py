@@ -100,31 +100,21 @@ async def get_conversation_history(conversation_id: UUID,
                                    ]):
     async with pool.connection() as conn:
         async with conn.cursor(row_factory=dict_row) as cur:
-            try:
-                # check if the username and conversation id match from db,
-                # when the user is logged in
-                await cur.execute("SELECT 1 FROM conversations "
-                                  "WHERE username = %s AND id = %s",
-                                  (current_user.username, conversation_id))
-            except AttributeError:
+            if current_user is None:
                 # if there is no username because the user is not logged in,
-                # just select using id to check conversation exists
-                await cur.execute("SELECT 1 FROM conversations "
-                                  "WHERE id = %s",
+                # select using id and must be public conversation, and check conversation exists
+                await cur.execute("SELECT 1 FROM conversations WHERE privacy = 'public' AND id = %s",
                                   (conversation_id,))
-            finally:
-                # checks if invalid conversation id or if not authenticated user
-                if await cur.fetchone() is None or current_user is None:
-                    # conversation is possibly created by another user,
-                    # so check if the conversation is public
-                    await cur.execute("SELECT 1 FROM conversations "
-                                      "WHERE privacy = %s AND id = %s",
-                                      ("public", conversation_id))
+            else:
+                # check if the username and conversation id match from database,
+                # when the user is logged in
+                await cur.execute("SELECT 1 FROM conversations WHERE (username = %s OR privacy = 'public') AND id = %s",
+                                  (current_user.username, conversation_id))
 
-                    if await cur.fetchone() is None:
-                        # conversation is not public or not a valid id
-                        raise HTTPException(status_code=403,
-                                            detail="You don't have access to this conversation")  # noqa
+            if await cur.fetchone() is None:
+                # conversation is not public or not a valid id
+                raise HTTPException(status_code=403,
+                                    detail="You don't have access to this conversation")  # noqa
 
             # fetch the message content, role and order by conversation_history(idx)
             # and return a dict for converting to List[ConversationMessage]
