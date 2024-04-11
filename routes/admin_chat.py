@@ -4,8 +4,9 @@ import os
 from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
+from routes.authentication import get_current_user, AuthenticatedUser
 from utils.db import pool
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 import anthropic
 
 from utils.models import ConversationMessage
@@ -39,7 +40,7 @@ async def ask_claude(query, schema):
 
 
 @router.post("/admin_chat")
-async def admin_chat(question: Question):
+async def admin_chat(question: Question, admin: AuthenticatedUser = Depends(get_current_user)):
     messages = []
     for message in question.previous_messages:
         if message.role not in __allowed_roles:
@@ -49,6 +50,10 @@ async def admin_chat(question: Question):
 
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
+            await cur.execute("SELECT 1 FROM admins WHERE username = %s", (admin.username,))
+            is_admin = (await cur.fetchone()) is not None
+            if not is_admin:
+                raise HTTPException(status_code=403,detail="You don't have permission to delete this conversation")
             await cur.execute(
                 """
                 SELECT conversations.id, conversation_history.idx, messages.content 
@@ -59,15 +64,15 @@ async def admin_chat(question: Question):
                 """
             )
             schema = await cur.fetchall()
-    prompt = await ask_claude(question, schema)
+            prompt = await ask_claude(question, schema)
 
-    async def event_stream():
-        with client.messages.stream(
-                model="claude-3-opus-20240229",
-                max_tokens=4096,
-                messages=messages,
-                system=prompt
-        ) as stream:
-            for text in stream.text_stream:
-                yield json.dumps({"text": text})
-    return EventSourceResponse(event_stream())
+            async def event_stream():
+                with client.messages.stream(
+                        model="claude-3-opus-20240229",
+                        max_tokens=4096,
+                        messages=messages,
+                        system=prompt
+                ) as stream:
+                    for text in stream.text_stream:
+                        yield json.dumps({"text": text})
+            return EventSourceResponse(event_stream())
