@@ -4,7 +4,6 @@ from typing import Union
 import html2text
 import httpx
 from bs4 import BeautifulSoup
-from duckduckgo_search import AsyncDDGS
 from llama_index.core import Document
 
 client = httpx.AsyncClient()
