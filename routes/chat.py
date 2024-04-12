@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from openai import AsyncOpenAI
 from opentelemetry import trace
 from pydantic import BaseModel
-from sse_starlette import EventSourceResponse
+from sse_starlette import EventSourceResponse, ServerSentEvent
 
 from routes.authentication import get_current_user_optional, AuthenticatedUser
 from utils import intranet_search_tool, uni_website_search_tool, \
