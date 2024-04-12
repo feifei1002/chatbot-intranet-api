@@ -37,7 +37,7 @@ async def chat(
             Depends(get_current_user_optional)
         ]
 ):
-    tools = ["Intranet Search", "Search University Website"]
+    tools = ["Intranet Search", "Search University Website", "Search Socities", "Search Events"]  # noqa
 
     authenticated_tools = [
         "Get Timetable",
