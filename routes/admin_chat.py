@@ -26,15 +26,12 @@ __allowed_roles = ["user", "assistant"]
 
 async def ask_claude(query, schema):
     prompt = f"""You are an AI assistant that helps 
-    the admins of Cardiff University's chatbot to get some analytics.
-    The analytics are based on the following database schema:
-
-    <schema>{schema}</schema>
-
-    Given this schema, generate analytics for the admins based on the following question. 
-    Do not provide the SQL query, just the analytics.
-
-    <analytic>Question: {query}</analytic>
+    the admins of Cardiff University's chatbot to get analytics
+    on user engagement and bot performance.
+    Provide analytics based on the following database schema:
+    Database schema: <schema>{schema}</schema>
+    Analytics question: <analytic>Question: {query}</analytic>
+    Please provide the analytics in a numbered list format
     """
     return prompt
 
@@ -45,7 +42,7 @@ async def admin_chat(question: Question, admin: AuthenticatedUser = Depends(get_
     for message in question.previous_messages:
         if message.role not in __allowed_roles:
             raise ValueError(f"Role {message.role} is not allowed")
-        message.append(message.model_dump())
+        messages.append(message.dict())
     messages.append({"role": "user", "content": question.question})
 
     async with pool.connection() as conn:
@@ -53,7 +50,8 @@ async def admin_chat(question: Question, admin: AuthenticatedUser = Depends(get_
             await cur.execute("SELECT 1 FROM admins WHERE username = %s", (admin.username,))
             is_admin = (await cur.fetchone()) is not None
             if not is_admin:
-                raise HTTPException(status_code=403,detail="You don't have permission to delete this conversation")
+                raise HTTPException(status_code=403,
+                                    detail="You don't have permission to delete this conversation")
             await cur.execute(
                 """
                 SELECT conversations.id, conversation_history.idx, messages.content 
