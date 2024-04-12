@@ -79,12 +79,11 @@ async def test_search_specific_society_by_description():
     for soc_link in soc_links:
         # Call scrape_content for each link to get the description of each society
         society_content = await scrape_content(soc_link)
-        for society in society_content:
-            # Check if the description contains all the keywords
-            if all(keyword in society.content for keyword in keywords):
-                found_society_by_description = True
-                break
 
-        # Ensure a society with the specific description is found
-        assert found_society_by_description, \
-            "Society with specified description not found"
+        # Check if the description contains all the keywords
+        if all(keyword in society_content.content for keyword in keywords):
+            found_society_by_description = True
+            break
+
+    # Ensure a society with the specific description is found
+    assert found_society_by_description, "Society with specified description not found"
