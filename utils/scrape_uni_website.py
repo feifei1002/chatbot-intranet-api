@@ -10,21 +10,17 @@ from llama_index.core import Document
 client = httpx.AsyncClient()
 
 
-async def duckduckgo_search(query) -> list[str]:
+async def searxng_search(query) -> list[str]:
     print("Searching for:", query)
-    # using max_results = 10 to get only the 10 most relevant data
-    # Take in the user's query using Async DuckDuckGoSearch (AsyncDDGS)
+    # Take in the user's query using SearXNG API
     # specify site:cardiff.ac.uk to only search for Cardiff University's website
-    async with AsyncDDGS() as addgs:
-        results = await addgs.text(
-            f"{query} site:cardiff.ac.uk",
-            safesearch='off',
-            timelimit='n', backend="html",
-            max_results=10
-        )
+    url = f"https://searx-api.kavin.rocks/search?q={query}+site:cardiff.ac.uk&format=json"
+    response = await client.get(url)
+    if response.status_code == 200:
+        results = response.json().get("results")
 
         # Extract the url link from the results
-        links = [results['href'] for results in results]
+        links = [result['url'] for result in results]
         print(links)
         return links
 
