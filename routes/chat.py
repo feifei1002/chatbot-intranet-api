@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from openai import AsyncOpenAI
 from opentelemetry import trace
 from pydantic import BaseModel
-from sse_starlette import EventSourceResponse, ServerSentEvent
+from sse_starlette import EventSourceResponse
 
 from routes.authentication import get_current_user_optional, AuthenticatedUser
 from utils import intranet_search_tool, uni_website_search_tool, \
@@ -324,10 +324,10 @@ async def chat(
                                         .search_uni_website(**call["arguments"])
                                 case "search_society":
                                     result = await society_scrape_tool \
-                                        .society_scrape_tool(**call["arguments"])
+                                        .search_society_tool(**call["arguments"])
                                 case "search_event":
                                     result = await event_scrape_tool \
-                                        .event_scrape_tool(**call["arguments"])
+                                        .search_event_tool(**call["arguments"])
                                 case "get_timetable":
                                     result = await timetable_tool.get_timetable(
                                         current_user.username,
