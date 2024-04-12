@@ -37,13 +37,9 @@ async def test_scrape_content():
     # Execute tasks concurrently and wait for all to complete
     societies_data_list = await asyncio.gather(*tasks)
 
-    for societies_data in societies_data_list:
-        # Validate the structure of the societies data
-        assert isinstance(societies_data, list)  # Ensure societies_data is a list
-
-        for society in societies_data:
-            # Ensure each society is an instance of SocietyModel
-            assert isinstance(society, SocietyModel)
+    for society_data in societies_data_list:
+        # Ensure each society_data is an instance of SocietyModel
+        assert isinstance(society_data, SocietyModel)
 
 
 @pytest.mark.asyncio
