@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from openai import AsyncOpenAI
 from opentelemetry import trace
 from pydantic import BaseModel
-from sse_starlette import EventSourceResponse
+from sse_starlette import EventSourceResponse, ServerSentEvent
 
 from routes.authentication import get_current_user_optional, AuthenticatedUser
 from utils import intranet_search_tool, uni_website_search_tool, \
@@ -317,4 +317,8 @@ async def chat(
             resp_span.set_attribute("tool_calls", tool_calls)
             resp_span.set_attribute("tools_called", tools_called)
 
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(
+        event_generator(),
+        ping=5,
+        ping_message_factory=lambda: ServerSentEvent(**{"comment": "Ping message!"})
+    )
