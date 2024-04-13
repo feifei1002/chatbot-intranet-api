@@ -8,6 +8,7 @@
         <createTable tableName="feedback">
             <column name="message_id" type="uuid"/>
             <column name="is_positive" type="boolean"/>
+            <column name="written_feedback" type="varchar(250)"/>
         </createTable>
         
         <!-- Add Foreign Key Constraint -->
