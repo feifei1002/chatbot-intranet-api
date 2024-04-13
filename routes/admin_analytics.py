@@ -80,3 +80,21 @@ async def test_query_honeycomb():
             return response.json()
         else:
             raise HTTPException(status_code=response.status_code, detail=response.text)
+
+
+@router.get("/admin/get_analytics/{query_id}")
+async def get_analytics(query_id: str):
+    # id = "fn82oMNF4fv"
+    url = "https://api.honeycomb.io/1/queries/unknown_service/" + query_id
+    headers = {
+        "Content-Type": "application/json",
+        "X-Honeycomb-Team": HONEYCOMB_API_KEY
+    }
+
+    # call request
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
