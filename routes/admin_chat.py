@@ -25,7 +25,7 @@ __allowed_roles = ["user", "assistant"]
 
 
 async def ask_claude(query, schema):
-    prompt = f"""You are an AI assistant that helps 
+    prompt = f"""You are an AI assistant that helps
     the admins of Cardiff University's chatbot to get analytics
     on user engagement and bot performance.
     Provide analytics based on the following database schema:
@@ -37,7 +37,8 @@ async def ask_claude(query, schema):
 
 
 @router.post("/admin_chat")
-async def admin_chat(question: Question, admin: AuthenticatedUser = Depends(get_current_user)):
+async def admin_chat(question: Question,
+                     admin: AuthenticatedUser = Depends(get_current_user)):
     messages = []
     for message in question.previous_messages:
         if message.role not in __allowed_roles:
@@ -47,17 +48,20 @@ async def admin_chat(question: Question, admin: AuthenticatedUser = Depends(get_
 
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
-            await cur.execute("SELECT 1 FROM admins WHERE username = %s", (admin.username,))
+            await cur.execute("SELECT 1 FROM admins WHERE username = %s",
+                              (admin.username,))
             is_admin = (await cur.fetchone()) is not None
             if not is_admin:
                 raise HTTPException(status_code=403,
-                                    detail="You don't have permission to delete this conversation")
+                                    detail="You don't have permission "
+                                           "to delete this conversation")
             await cur.execute(
                 """
-                SELECT conversations.id, conversation_history.idx, messages.content 
-                FROM conversations 
-                JOIN conversation_history ON conversations.id = conversation_history.conversation_id 
-                JOIN messages ON conversation_history.message_id = messages.id 
+                SELECT conversations.id, conversation_history.idx, messages.content
+                FROM conversations
+                JOIN conversation_history
+                ON conversations.id = conversation_history.conversation_id
+                JOIN messages ON conversation_history.message_id = messages.id
                 ORDER BY conversations.id, conversation_history.idx
                 """
             )
