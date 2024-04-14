@@ -1,15 +1,15 @@
 import pytest
 from unittest.mock import patch, Mock
-from utils.scrape_uni_website import duckduckgo_search
+from utils.scrape_uni_website import searxng_search
 
 
 @pytest.mark.asyncio
-async def test_duckduckgo_search():
+async def test_searxng_search():
     # Mock external dependencies
     mock_results = Mock()
 
     # Set up patching for DuckDuckGoSearchAPIWrapper and DuckDuckGoSearchResults
-    with patch('utils.scrape_uni_website.duckduckgo_search'):
+    with patch('utils.scrape_uni_website.searxng_search'):
         # Set up the expected values
         query = ("What are the tuition for studying "
                  "computer science at Cardiff University?")
@@ -20,7 +20,7 @@ async def test_duckduckgo_search():
         mock_results.run.return_value = str(expected_result)
 
         # Call the function
-        result = await duckduckgo_search(query)
+        result = await searxng_search(query)
 
         print("Expected result: " + expected_result[0])
         normalized_expected_result = [result[0]]
