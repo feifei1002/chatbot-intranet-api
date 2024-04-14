@@ -116,8 +116,10 @@ async def get_conversation_history(conversation_id: UUID,
 
             if await cur.fetchone() is None:
                 # conversation is not public or not a valid id
-                raise HTTPException(status_code=403,
-                                    detail="You don't have access to this conversation")  # noqa
+                raise HTTPException(
+                    status_code=403,
+                    detail="You don't have access to this conversation"
+                )
 
             # fetch the message content, role and order by conversation_history(idx)
             # and return a dict for converting to List[ConversationMessage]
