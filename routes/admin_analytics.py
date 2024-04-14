@@ -20,7 +20,6 @@ if NEWRELIC_API_KEY is None:
 if NEWRELIC_ACCOUNT_ID is None:
     raise Exception("NEWRELIC_ACCOUNT_ID environment variable not set")
 
-
 headers = {
     "Api-Key": NEWRELIC_API_KEY
 }
@@ -89,15 +88,15 @@ async def get_query_id(current_user: Annotated[
         run_query("SELECT count(*) FROM Span WHERE name = 'chat_response' SINCE 7 days ago TIMESERIES 1 day"), # noqa
         run_query("SELECT tools_called FROM Span WHERE name = 'chat_response' AND tools_called IS NOT NULL SINCE 7 days ago"), # noqa
         run_query("SELECT count(*) FROM Span WHERE name = 'POST /conversations/create' SINCE 1 day ago TIMESERIES 1 hour"), # noqa
-        run_query("SELECT count(*) FROM Span WHERE name = 'POST /conversations/create' SINCE 7 days ago TIMESERIES 1 day") # noqa
+        run_query("SELECT count(*) FROM Span WHERE name = 'POST /conversations/create' SINCE 1 hour ago TIMESERIES 10 minutes") # noqa
     ]
 
     # Wait for all the tasks to finish
     results = await asyncio.gather(*tasks)
 
     # Text data
-    conversation_1h = str(results[1][0]["count"])
     conversation_1m = str(results[0][0]["count"])
+    conversation_1h = str(results[1][0]["count"])
     authenticated_24h = str(results[2][0]["count"])
     unauthenticated_24h = str(results[3][0]["count"])
     messages_24h = str(results[4][0]["count"])
@@ -108,6 +107,8 @@ async def get_query_id(current_user: Annotated[
     # Charts data
     conversations_7d_chart = convert_ts(results[5])
     messages_7d_chart = convert_ts(results[6])
+    conversations_1d_chart = convert_ts(results[8])
+    conversations_1h_chart = convert_ts(results[9])
 
     # Tools called
     tools_called = {}
@@ -126,9 +127,6 @@ async def get_query_id(current_user: Annotated[
                 else:
                     tools_called[tool] = 1
 
-    print(tools_called)
-
-
     return {
         "conversation_1m": conversation_1m,
         "conversation_1h": conversation_1h,
@@ -136,5 +134,8 @@ async def get_query_id(current_user: Annotated[
         "unauthenticated_24h": unauthenticated_24h,
         "messages_24h": messages_24h,
         "conversations_7d_chart": conversations_7d_chart,
-        "messages_7d_chart": messages_7d_chart
+        "messages_7d_chart": messages_7d_chart,
+        "tools": tools_called,
+        "conversations_1h_chart": conversations_1h_chart,
+        "conversations_1d_chart": conversations_1d_chart
     }
