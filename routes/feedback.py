@@ -1,21 +1,21 @@
 
 from fastapi import APIRouter, Request
+from pydantic import BaseModel
 
 from utils.db import pool
 
 
 router = APIRouter()
 
+class FeedbackData(BaseModel):
+    id: str
+    positive: bool
+    feedback: str
 
 @router.post("/feedback")
-async def feedback(request: Request):
-    data = await request.body()
-    message = data.get("message")
-    is_positive = data.get("positive")
-    feedback = data.get("feedback")
+async def feedback(data: FeedbackData):
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
             await cur.execute("INSERT INTO feedback (message_id, is_positive, written_feedback) "
-                              "VALUES (SELECT id FROM messages WHERE content = %s), %s, %s)",
-                              (message, is_positive, feedback),)
-
+                              "VALUES (%s, %s, %s)",
+                              (data.id, data.positive, data.feedback),)

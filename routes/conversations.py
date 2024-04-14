@@ -152,6 +152,9 @@ async def add_messages(messages: ChatHistory,
     # only generate a title when there are no values in conversation_history for the id
     generate_title = False
     username = current_user.username
+
+    ids = []
+
     # insert into conversation_history and messages
     async with pool.connection() as conn:
         async with conn.transaction():
@@ -201,6 +204,8 @@ async def add_messages(messages: ChatHistory,
                         " VALUES (%s, %s, %s)",
                         (conversation_id, message_id, next_idx,))
 
+                    ids.append(message_id)
+
     # if it's the first set of messages,
     # generate a title and update the value in conversations
     if generate_title:
@@ -215,7 +220,9 @@ async def add_messages(messages: ChatHistory,
                     "WHERE id = %s AND username = %s",
                     (conversation_title, conversation_id, current_user.username))
 
-    return {"message": "Inserted messages successfully"}
+    return {
+        "message_ids": ids
+    }
 
 
 # Delete the whole conversation from the database
