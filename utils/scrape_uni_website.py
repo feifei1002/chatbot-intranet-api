@@ -1,4 +1,5 @@
 import asyncio
+import os
 from typing import Union
 
 import html2text
@@ -7,14 +8,20 @@ from bs4 import BeautifulSoup
 from llama_index.core import Document
 
 client = httpx.AsyncClient()
+SEARX_URL = os.getenv("SEARX_URL", "https://searx-api.kavin.rocks")
 
 
 async def searxng_search(query) -> list[str]:
     print("Searching for:", query)
     # Take in the user's query using SearXNG API
     # specify site:cardiff.ac.uk to only search for Cardiff University's website
-    url = f"https://searx-api.kavin.rocks/search?q={query}+site:cardiff.ac.uk&format=json"
-    response = await client.get(url)
+    response = await client.get(
+        f"{SEARX_URL}/search",
+        params={
+            "q": f"{query} site:cardiff.ac.uk",
+            "format": "json"
+        }
+    )
     if response.status_code == 200:
         results = response.json().get("results")
 
