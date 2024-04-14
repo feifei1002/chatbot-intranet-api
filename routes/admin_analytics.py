@@ -7,6 +7,10 @@ router = APIRouter()
 
 HONEYCOMB_API_KEY = os.environ.get("HONEYCOMB_API_KEY")
 
+headers = {
+        "Content-Type": "application/json",
+        "X-Honeycomb-Team": HONEYCOMB_API_KEY
+    }
 
 # @router.get("/admin/chat_analytics")
 # async def export_honeycomb_data():
@@ -29,14 +33,11 @@ HONEYCOMB_API_KEY = os.environ.get("HONEYCOMB_API_KEY")
 
 
 # call with curl using: curl -X POST http://127.0.0.1:8000/admin/chat_analytics
-@router.post("/admin/chat_analytics")
-async def test_query_honeycomb():
+@router.post("/admin/get_query")
+async def get_query_id():
     # set values for request
     url = "https://api.honeycomb.io/1/queries/unknown_service"
-    headers = {
-        "Content-Type": "application/json",
-        "X-Honeycomb-Team": HONEYCOMB_API_KEY
-    }
+
     # payload to be changed, currently just for testing random values
     payload = {
         "breakdowns": [
@@ -82,14 +83,36 @@ async def test_query_honeycomb():
             raise HTTPException(status_code=response.status_code, detail=response.text)
 
 
-@router.get("/admin/get_analytics/{query_id}")
-async def get_analytics(query_id: str):
-    # id = "fn82oMNF4fv"
+@router.get("/admin/get_query/{query_id}")
+async def get_query(query_id: str):
     url = "https://api.honeycomb.io/1/queries/unknown_service/" + query_id
-    headers = {
-        "Content-Type": "application/json",
-        "X-Honeycomb-Team": HONEYCOMB_API_KEY
-    }
+
+    # call request
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+
+# below code will not work because don't have enterprise api key...
+@router.post("/admin/get_query_result/")
+async def get_query_result_id():
+    url = "https://api.honeycomb.io/1/query_results/unknown_service/"
+
+    # call request
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+
+@router.get("/admin/get_query_result/{query_id}")
+async def get_query_result(query_id: str):
+    url = "https://api.honeycomb.io/1/query_results/unknown_service/" + query_id
 
     # call request
     async with httpx.AsyncClient() as client:
