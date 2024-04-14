@@ -24,6 +24,7 @@ class Question(BaseModel):
 __allowed_roles = ["user", "assistant"]
 
 
+# Create a prompt for Claude to answer the question
 async def ask_claude(query, schema):
     prompt = f"""You are an AI assistant that helps
     the admins of Cardiff University's chatbot to get analytics
@@ -36,6 +37,7 @@ async def ask_claude(query, schema):
     return prompt
 
 
+# A route for admin to send a question to Claude
 @router.post("/admin_chat")
 async def admin_chat(question: Question,
                      admin: AuthenticatedUser = Depends(get_current_user)):
@@ -50,11 +52,15 @@ async def admin_chat(question: Question,
         async with conn.cursor() as cur:
             await cur.execute("SELECT 1 FROM admins WHERE username = %s",
                               (admin.username,))
+            # Check if the user is an admin
             is_admin = (await cur.fetchone()) is not None
+
+            # If the user is not an admin, raise an error
             if not is_admin:
                 raise HTTPException(status_code=403,
                                     detail="You don't have permission "
                                            "to delete this conversation")
+            # Get the schema of the database
             await cur.execute(
                 """
                 SELECT conversations.id, conversation_history.idx, messages.content
@@ -66,8 +72,11 @@ async def admin_chat(question: Question,
                 """
             )
             schema = await cur.fetchall()
+
+            # Pass the schema to Claude and ask Claude to answer the question
             prompt = await ask_claude(question, schema)
 
+            # Get the response from Claude and stream it
             async def event_stream():
                 with client.messages.stream(
                         model="claude-3-opus-20240229",
@@ -77,4 +86,5 @@ async def admin_chat(question: Question,
                 ) as stream:
                     for text in stream.text_stream:
                         yield json.dumps({"text": text})
+
             return EventSourceResponse(event_stream())
