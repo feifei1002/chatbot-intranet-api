@@ -25,13 +25,15 @@ __allowed_roles = ["user", "assistant"]
 
 
 # Create a prompt for Claude to answer the question
-async def ask_claude(query, schema):
+async def ask_claude(question, query_results):
     prompt = f"""You are an AI assistant that helps
     the admins of Cardiff University's chatbot to get analytics
     on user engagement and bot performance.
-    Provide analytics based on the following database schema:
-    Database schema: <schema>{schema}</schema>
-    Analytics question: <analytic>Question: {query}</analytic>
+    Provide analytics based on the following query results:
+    <results>
+    {query_results}
+    </results>
+    Analytics question: <analytic>Question: {question}</analytic>
     Please provide the analytics in a numbered list format
     """
     return prompt
@@ -57,10 +59,11 @@ async def admin_chat(question: Question,
 
             # If the user is not an admin, raise an error
             if not is_admin:
-                raise HTTPException(status_code=403,
-                                    detail="You don't have permission "
-                                           "to delete this conversation")
-            # Get the schema of the database
+                raise HTTPException(
+                    status_code=403,
+                    detail="You don't have permission to access the database")
+
+            # Get the data needed from the database
             await cur.execute(
                 """
                 SELECT conversations.id, conversation_history.idx, messages.content
