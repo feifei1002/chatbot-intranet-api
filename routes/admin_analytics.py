@@ -1,123 +1,140 @@
+import asyncio
+import json
 import os
+import re
+from typing import Union, Annotated
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+
+from routes.authentication import AuthenticatedUser, get_current_user
+from utils.db import pool
 
 router = APIRouter()
 
-HONEYCOMB_API_KEY = os.environ.get("HONEYCOMB_API_KEY")
+NEWRELIC_API_KEY = os.environ.get("NEWRELIC_API_KEY")
+NEWRELIC_ACCOUNT_ID = os.environ.get("NEWRELIC_ACCOUNT_ID")
+
+if NEWRELIC_API_KEY is None:
+    raise Exception("NEWRELIC_API_KEY environment variable not set")
+if NEWRELIC_ACCOUNT_ID is None:
+    raise Exception("NEWRELIC_ACCOUNT_ID environment variable not set")
+
 
 headers = {
-        "Content-Type": "application/json",
-        "X-Honeycomb-Team": HONEYCOMB_API_KEY
-    }
+    "Api-Key": NEWRELIC_API_KEY
+}
 
-# @router.get("/admin/chat_analytics")
-# async def export_honeycomb_data():
-#     # honeycomb query
-#     query = "query to honeycomb goes here"
-#
-#     # http request to honeycomb's export api
-#     response = httpx.get(
-#         # url returns 404
-#         "https://api.honeycomb.io/1/export",
-#         data=query
-#     )
-#
-#     # check if successful request
-#     if response.status_code == 200:
-#         data = response.text
-#         return {"message": f"exported successfully: {data}"}
-#     else:
-#         return {"message": f"failed with code {response.status_code}"}
+client = httpx.AsyncClient()
 
 
-# call with curl using: curl -X POST http://127.0.0.1:8000/admin/chat_analytics
-@router.post("/admin/get_query")
-async def get_query_id():
-    # set values for request
-    url = "https://api.honeycomb.io/1/queries/unknown_service"
+async def run_query(nrql_query: str) -> list[dict]:
+    url = "https://api.eu.newrelic.com/graphql"
 
-    # payload to be changed, currently just for testing random values
+    # GraphQL query payload
     payload = {
-        "breakdowns": [
-            "name"
-        ],
-        "calculations": [
+        "query":
+            """
             {
-                "op": "COUNT"
+              actor {
+            """
+            f"    account (id: {NEWRELIC_ACCOUNT_ID}) ""{"
+            """
+            """f'      nrql(query: "{nrql_query}")'""" { 
+                    results
+                  }
+                }
+              }
             }
-        ],
-        "filters": [
-            {
-                "op": "=",
-                "column": "name",
-                "value": "POST /chat"
-            }
-        ],
-        "filter_combination": "AND",
-        "granularity": 70,
-        "orders": [
-            {
-                "op": "COUNT",
-                "order": "ascending"
-            }
-        ],
-        "limit": 100,
-        "start_time": 1676399428,
-        "end_time": 1676467828,
-        "havings": [
-            {
-                "calculate_op": "COUNT",
-                "op": "=",
-                "value": 10
-            }
-        ]
+            """  # noqa
     }
-    # call request
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=payload, headers=headers)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    response = await client.post(url, json=payload, headers=headers)
+    if response.status_code == 200:
+        return response.json()["data"]["actor"]["account"]["nrql"]["results"]
+    else:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
 
 
-@router.get("/admin/get_query/{query_id}")
-async def get_query(query_id: str):
-    url = "https://api.honeycomb.io/1/queries/unknown_service/" + query_id
+@router.get("/admin/query")
+async def get_query_id(current_user: Annotated[
+    Union[AuthenticatedUser],
+    Depends(get_current_user)
+]):
+    # Check if the user is an admin
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "SELECT 1 FROM admins WHERE username = %s",
+                (current_user.username,)
+            )
 
-    # call request
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise HTTPException(status_code=response.status_code, detail=response.text)
+            is_admin = (await cur.fetchone()) is not None
+
+            if not is_admin:
+                raise HTTPException(status_code=403, detail="You are not an admin")
+
+    # User is admin
+
+    # Run the queries and create a list of async tasks
+    tasks = [
+        # text data
+        run_query("SELECT count(*) FROM Span WHERE name = 'POST /conversations/create' SINCE 1 minute ago"), # noqa
+        run_query("SELECT count(*) FROM Span WHERE name = 'POST /conversations/create' SINCE 1 hour ago"), # noqa
+        run_query("SELECT count(*) FROM Span WHERE name = 'chat_response' AND authenticated = true SINCE 1 day ago"), # noqa
+        run_query("SELECT count(*) FROM Span WHERE name = 'chat_response' AND authenticated = false SINCE 1 day ago"), # noqa
+        run_query("SELECT count(*) FROM Span WHERE name = 'chat_response' SINCE 1 day ago"), # noqa
+        # charts data
+        run_query("SELECT count(*) FROM Span WHERE name = 'POST /conversations/create' SINCE 7 days ago TIMESERIES 1 day"), # noqa
+        run_query("SELECT count(*) FROM Span WHERE name = 'chat_response' SINCE 7 days ago TIMESERIES 1 day"), # noqa
+        run_query("SELECT tools_called FROM Span WHERE name = 'chat_response' AND tools_called IS NOT NULL SINCE 7 days ago"), # noqa
+        run_query("SELECT count(*) FROM Span WHERE name = 'POST /conversations/create' SINCE 1 day ago TIMESERIES 1 hour"), # noqa
+        run_query("SELECT count(*) FROM Span WHERE name = 'POST /conversations/create' SINCE 7 days ago TIMESERIES 1 day") # noqa
+    ]
+
+    # Wait for all the tasks to finish
+    results = await asyncio.gather(*tasks)
+
+    # Text data
+    conversation_1h = str(results[1][0]["count"])
+    conversation_1m = str(results[0][0]["count"])
+    authenticated_24h = str(results[2][0]["count"])
+    unauthenticated_24h = str(results[3][0]["count"])
+    messages_24h = str(results[4][0]["count"])
+
+    def convert_ts(data: list[dict]) -> list[dict]:
+        return [{"x": x["beginTimeSeconds"] * 1000, "y": x["count"]} for x in data]
+
+    # Charts data
+    conversations_7d_chart = convert_ts(results[5])
+    messages_7d_chart = convert_ts(results[6])
+
+    # Tools called
+    tools_called = {}
+
+    # Extract the tools called
+    # Regex to parse strs like
+    # <ArrayAttributeValue stringArray:[get_timetable]>
+    regex = r"\[([\w\,]+)\]"
+    for call in results[7]:
+        match = re.search(regex, call["tools_called"])
+        if match:
+            tools = match.group(1).split(",")
+            for tool in tools:
+                if tool in tools_called:
+                    tools_called[tool] += 1
+                else:
+                    tools_called[tool] = 1
+
+    print(tools_called)
 
 
-# below code will not work because don't have enterprise api key...
-@router.post("/admin/get_query_result/")
-async def get_query_result_id():
-    url = "https://api.honeycomb.io/1/query_results/unknown_service/"
-
-    # call request
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, headers=headers)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise HTTPException(status_code=response.status_code, detail=response.text)
-
-
-@router.get("/admin/get_query_result/{query_id}")
-async def get_query_result(query_id: str):
-    url = "https://api.honeycomb.io/1/query_results/unknown_service/" + query_id
-
-    # call request
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise HTTPException(status_code=response.status_code, detail=response.text)
+    return {
+        "conversation_1m": conversation_1m,
+        "conversation_1h": conversation_1h,
+        "authenticated_24h": authenticated_24h,
+        "unauthenticated_24h": unauthenticated_24h,
+        "messages_24h": messages_24h,
+        "conversations_7d_chart": conversations_7d_chart,
+        "messages_7d_chart": messages_7d_chart
+    }
