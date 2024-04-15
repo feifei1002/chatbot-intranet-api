@@ -13,7 +13,6 @@ from llama_index.vector_stores.qdrant import QdrantVectorStore
 # Qdrant client for interacting with Qdrant
 from qdrant_client import AsyncQdrantClient
 
-
 if not os.environ.get("QDRANT_URL"):
     raise ValueError("QDRANT_URL environment variable not set")
 if not os.environ.get("QDRANT_API_KEY"):
@@ -35,11 +34,11 @@ index = VectorStoreIndex.from_vector_store(
 
 
 async def search_event_tool(query: str) -> str:
-    retriever = index.as_retriever(similarity_top_k=3)
+    retriever = index.as_retriever(similarity_top_k=10)
 
     results = await retriever.aretrieve(query)
     # Reranking
-    reranker = CohereRerank()
+    reranker = CohereRerank(model="rerank-english-v3.0")
     # Reranker asynchronously
     results = await (asyncio.to_thread(reranker.postprocess_nodes,
                                        nodes=results, query_str=query))

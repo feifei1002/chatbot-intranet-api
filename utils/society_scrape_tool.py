@@ -33,11 +33,11 @@ index = VectorStoreIndex.from_vector_store(
 
 
 async def search_society_tool(query: str) -> str:
-    retriever = index.as_retriever(similarity_top_k=3)
+    retriever = index.as_retriever(similarity_top_k=10)
 
     results = await retriever.aretrieve(query)
     # Reranking
-    reranker = CohereRerank()
+    reranker = CohereRerank(model="rerank-english-v3.0")
     # Reranker asynchronously
     results = await (asyncio.to_thread(reranker.postprocess_nodes,
                                        nodes=results, query_str=query))
