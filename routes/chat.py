@@ -10,7 +10,7 @@ from sse_starlette import EventSourceResponse, ServerSentEvent
 
 from routes.authentication import get_current_user_optional, AuthenticatedUser
 from utils import intranet_search_tool, uni_website_search_tool, \
-    timetable_tool, learning_central_tool
+    timetable_tool, learning_central_tool, society_scrape_tool, event_scrape_tool
 from utils.models import ConversationMessage
 
 router = APIRouter()
@@ -37,7 +37,7 @@ async def chat(
             Depends(get_current_user_optional)
         ]
 ):
-    tools = ["Intranet Search", "Search University Website"]
+    tools = ["Intranet Search", "Search University Website", "Search Socities", "Search Events"]  # noqa
 
     authenticated_tools = [
         "Get Timetable",
@@ -106,6 +106,46 @@ async def chat(
                         "query": {
                             "type": "string",
                             "description": "The question to search for on Cardiff University's website",  # noqa
+                        }
+                    },
+                    "required": ["query"],
+                },
+            },
+        },
+        # Societies tool
+        {
+            "type": "function",
+            "function": {
+                "name": "society_queries",
+                "description": "Search information about Cardiff Univeristy Societies, to help answer the user's query",  # noqa
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The question to search for about the societies on the Student Union Website",  # noqa
+                        }
+                    },
+                    "required": ["query"],
+                },
+            },
+        },
+        # Events Tool
+        {
+            "type": "function",
+            "function": {
+                "name": "event_queries",
+                "description": "Search information about Cardiff Univeristy Events, "
+                               "to help answer the user's query",
+                # noqa
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The question to search for about the "
+                                           "events on the Student Union Website",
+                            # noqa
                         }
                     },
                     "required": ["query"],
@@ -282,6 +322,12 @@ async def chat(
                                 case "search_uni_website":
                                     result = await uni_website_search_tool \
                                         .search_uni_website(**call["arguments"])
+                                case "society_queries":
+                                    result = await society_scrape_tool \
+                                        .search_society_tool(**call["arguments"])
+                                case "event_queries":
+                                    result = await event_scrape_tool \
+                                        .search_event_tool(**call["arguments"])
                                 case "get_timetable":
                                     result = await timetable_tool.get_timetable(
                                         current_user.username,
@@ -293,6 +339,7 @@ async def chat(
                                         current_user.username,
                                         current_user.cookies
                                     )
+
                                 case _:
                                     raise ValueError(
                                         f"Assistant called unknown function: {name}"

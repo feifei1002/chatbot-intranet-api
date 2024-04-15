@@ -37,13 +37,9 @@ async def test_scrape_content():
     # Execute tasks concurrently and wait for all to complete
     societies_data_list = await asyncio.gather(*tasks)
 
-    for societies_data in societies_data_list:
-        # Validate the structure of the societies data
-        assert isinstance(societies_data, list)  # Ensure societies_data is a list
-
-        for society in societies_data:
-            # Ensure each society is an instance of SocietyModel
-            assert isinstance(society, SocietyModel)
+    for society_data in societies_data_list:
+        # Ensure each society_data is an instance of SocietyModel
+        assert isinstance(society_data, SocietyModel)
 
 
 @pytest.mark.asyncio
@@ -83,12 +79,11 @@ async def test_search_specific_society_by_description():
     for soc_link in soc_links:
         # Call scrape_content for each link to get the description of each society
         society_content = await scrape_content(soc_link)
-        for society in society_content:
-            # Check if the description contains all the keywords
-            if all(keyword in society.content for keyword in keywords):
-                found_society_by_description = True
-                break
 
-        # Ensure a society with the specific description is found
-        assert found_society_by_description, \
-            "Society with specified description not found"
+        # Check if the description contains all the keywords
+        if all(keyword in society_content.content for keyword in keywords):
+            found_society_by_description = True
+            break
+
+    # Ensure a society with the specific description is found
+    assert found_society_by_description, "Society with specified description not found"
