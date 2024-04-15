@@ -91,8 +91,7 @@ async def get_conversations(current_user: Annotated[
 
 
 # gets the conversation history for a given conversation ID
-@router.get("/conversations/{conversation_id}",
-            response_model=List[ConversationMessage])
+@router.get("/conversations/{conversation_id}")
 async def get_conversation_history(conversation_id: UUID,
                                    current_user: Annotated[
                                        Union[AuthenticatedUser],
@@ -123,7 +122,7 @@ async def get_conversation_history(conversation_id: UUID,
 
             # fetch the message content, role and order by conversation_history(idx)
             # and return a dict for converting to List[ConversationMessage]
-            await cur.execute("SELECT messages.content, messages.role "
+            await cur.execute("SELECT messages.content, messages.role, messages.id "
                               "FROM conversation_history "
                               "JOIN messages ON message_id = id "
                               "WHERE conversation_id = %s "
