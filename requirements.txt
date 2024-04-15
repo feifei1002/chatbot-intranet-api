@@ -22,5 +22,6 @@ deepgram-sdk==3.2.2
 llama-index-postprocessor-cohere-rerank==0.1.2
 opentelemetry-api==1.24.0
 opentelemetry-sdk==1.24.0
+opentelemetry-exporter-otlp-proto-http==1.24.0
 opentelemetry-instrumentation-httpx==0.45b0
 opentelemetry-instrumentation-fastapi==0.45b0
