@@ -33,7 +33,7 @@ async def search_uni_website(query: str) -> str:
     nodes = [NodeWithScore(node=node) for node in nodes]
 
     # Reranker
-    reranker = CohereRerank()
+    reranker = CohereRerank(model="rerank-english-v3.0")
     # Reranker asynchronously
     results = await asyncio.to_thread(reranker.postprocess_nodes,
                                       nodes=nodes, query_str=query)
