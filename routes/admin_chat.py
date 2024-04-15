@@ -82,7 +82,7 @@ async def admin_chat(question: Question,
             # Get the response from Claude and stream it
             async def event_stream():
                 with client.messages.stream(
-                        model="claude-3-opus-20240229",
+                        model="claude-3-haiku-20240307",
                         max_tokens=4096,
                         messages=messages,
                         system=prompt
