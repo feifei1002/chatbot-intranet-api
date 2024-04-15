@@ -11,6 +11,7 @@ class FeedbackData(BaseModel):
     positive: bool
     feedback: str
 
+
 # adds content from feedback payload to the feedback table
 @router.post("/feedback")
 async def feedback(data: FeedbackData):
