@@ -1,27 +1,18 @@
 # Import necessary modules
-import asyncio  # Module for writing asynchronous code
-import os  # Module for operating system related functionalities
-import pickle  # Module for serializing and deserializing Python objects
+import asyncio
+import os
 
 import httpx  # Async HTTP client library
-import nest_asyncio  # Module to enable nested asyncio event loops
 from bs4 import BeautifulSoup  # Module for web scraping
-from dotenv import load_dotenv  # Module to load environment variables from .env file
-from llama_index.core import Document  # Document class from llama_index
-from llama_index.core import VectorStoreIndex  # Vector store index from llama_index
-# Ingestion pipeline for document processing
+from dotenv import load_dotenv
+from llama_index.core import VectorStoreIndex, Document
 from llama_index.core.ingestion import IngestionPipeline
-# Sentence splitter for chunking text
 from llama_index.core.node_parser import SentenceSplitter
-# Metadata mode enum from llama_index
-from llama_index.core.schema import MetadataMode
 from llama_index.embeddings.openai import OpenAIEmbedding
-# Vector store for Qdrant
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 # Base class for creating Pydantic models
 from pydantic import BaseModel
-# Qdrant client for interacting with Qdrant
-from qdrant_client import QdrantClient, AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient
 
 
 class EventModel(BaseModel):
@@ -94,7 +85,6 @@ async def scrape_events(soc_event_url):
 
 
 async def main():
-    # Scrape events data
     events_result = await scrape_events("https://www.cardiffstudents.com/activities/societies/events/")
     documents = []
     for event in events_result:
@@ -105,30 +95,19 @@ async def main():
                                  "location": event.location})
         documents.append(doc)
 
-        # Print content with metadata for each document
-        print(doc.get_content(metadata_mode=MetadataMode.EMBED))
-
-    # Save documents to a file
-    pickle.dump(documents, open("events.pkl", "wb"))
-
     # Initialise embedding model
-
     embed_model = OpenAIEmbedding(model="text-embedding-3-large")
     splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
     # Create Qdrant clients
-    client = QdrantClient(
-        url=os.environ.get("QDRANT_URL"),
-        api_key=os.environ.get("QDRANT_API_KEY")
-    )
     aclient = AsyncQdrantClient(
         url=os.environ.get("QDRANT_URL"),
         api_key=os.environ.get("QDRANT_API_KEY")
     )
 
     # Create Qdrant vector store
-    store = QdrantVectorStore("events", client=client, aclient=aclient)
+    store = QdrantVectorStore("events", aclient=aclient)
 
     # Define ingestion pipeline
     pipeline = IngestionPipeline(
@@ -145,22 +124,20 @@ async def main():
                                                use_async=True)
 
     # Create retriever from index
-    retriever = index.as_retriever()
+    retriever = index.as_retriever(similarity_top_k=3)
 
     # Perform retrieval query
-    result = await retriever.aretrieve("what gaming events are there?")
+    results = await retriever.aretrieve("When is the next yoga event?")
 
     # Print retrieval result
-    print(result)
+    print(results)
 
 
-# Check if the script is being run as the main module
 if __name__ == "__main__":
-    # Load environment variables from the .env file
     load_dotenv()
 
-    # Enable nested asyncio event loops
+    import nest_asyncio
+
     nest_asyncio.apply()
 
-    # Run the main asynchronous function
     asyncio.run(main())

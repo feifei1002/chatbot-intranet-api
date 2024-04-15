@@ -36,8 +36,8 @@ async def test_search_event_and_organisation():
     assert isinstance(events_data, list)  # Ensure events_data is a list
 
     # Search for an event name and an organisation name
-    event_name_to_search = "Medical Law Panel Event"
-    organization_to_search = "Law Society Cardiff"
+    event_name_to_search = "Slash Ball"
+    organization_to_search = "Slash Hip Hop Dance"
 
     found_event = False
     for event in events_data:
