@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from utils.db import pool
@@ -18,6 +18,6 @@ async def feedback(data: FeedbackData):
         async with conn.cursor() as cur:
             await cur.execute("INSERT INTO feedback (message_id, is_positive, written_feedback) "
                               "VALUES (%s, %s, %s) "
-                              "ON CONFLICT DO UPDATE "
-                              "SET is_positive = excluded.is_positive, written_feedback = excluded.written_feedback",
+                              "ON CONFLICT (message_id) DO UPDATE "
+                              "SET is_positive = EXCLUDED.is_positive, written_feedback = EXCLUDED.written_feedback",
                               (data.id, data.positive, data.feedback),)

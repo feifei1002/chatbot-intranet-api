@@ -3,12 +3,15 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <changeSet id="4-0" author="ayman" dbms="postgresql">
+    <changeSet id="4-4" author="ayman" dbms="postgresql">
         <!-- Create 'feedback' table -->
         <createTable tableName="feedback">
-            <column name="message_id" type="uuid"/>
+            <column name="message_id" type="uuid">
+                <constraints unique="true" uniqueConstraintName="uk_feedback_message_id"/>
+            </column>
             <column name="is_positive" type="boolean"/>
             <column name="written_feedback" type="varchar(250)"/>
+
         </createTable>
         
         <!-- Add Foreign Key Constraint -->
