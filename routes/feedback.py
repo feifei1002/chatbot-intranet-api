@@ -17,5 +17,7 @@ async def feedback(data: FeedbackData):
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
             await cur.execute("INSERT INTO feedback (message_id, is_positive, written_feedback) "
-                              "VALUES (%s, %s, %s)",
+                              "VALUES (%s, %s, %s) "
+                              "ON CONFLICT DO UPDATE "
+                              "SET is_positive = excluded.is_positive, written_feedback = excluded.written_feedback",
                               (data.id, data.positive, data.feedback),)
