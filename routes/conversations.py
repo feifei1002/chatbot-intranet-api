@@ -8,7 +8,8 @@ from openai import AsyncOpenAI
 from psycopg.rows import dict_row
 from pydantic import BaseModel
 
-from routes.authentication import AuthenticatedUser, get_current_user
+from routes.authentication import (AuthenticatedUser, get_current_user,
+                                   get_current_user_optional)
 from utils.db import pool
 from utils.models import ConversationMessage
 
@@ -95,20 +96,32 @@ async def get_conversations(current_user: Annotated[
 async def get_conversation_history(conversation_id: UUID,
                                    current_user: Annotated[
                                        Union[AuthenticatedUser],
-                                       Depends(get_current_user)
+                                       Depends(get_current_user_optional)
                                    ]):
     async with pool.connection() as conn:
         async with conn.cursor(row_factory=dict_row) as cur:
-            # Check if the user and conversation id match from db
-            await cur.execute("SELECT 1 FROM conversations "
-                              "WHERE username = %s AND id = %s",
-                              (current_user.username, conversation_id))
+            if current_user is None:
+                # if there is no username because the user is not logged in,
+                # select using id and must be public conversation,
+                # and check conversation exists
+                await cur.execute("SELECT 1 FROM conversations "
+                                  "WHERE privacy = 'public' AND id = %s",
+                                  (conversation_id,))
+            else:
+                # check if the username and conversation id match from database,
+                # when the user is logged in
+                await cur.execute("SELECT 1 FROM conversations WHERE "
+                                  "(username = %s OR privacy = 'public') AND id = %s",
+                                  (current_user.username, conversation_id))
 
             if await cur.fetchone() is None:
-                raise HTTPException(status_code=403,
-                                    detail="You don't have access to this conversation")
+                # conversation is not public or not a valid id
+                raise HTTPException(
+                    status_code=403,
+                    detail="You don't have access to this conversation"
+                )
 
-            # Fetch the message content, role and order by conversation_history(idx)
+            # fetch the message content, role and order by conversation_history(idx)
             # and return a dict for converting to List[ConversationMessage]
             await cur.execute("SELECT messages.content, messages.role "
                               "FROM conversation_history "
@@ -247,3 +260,21 @@ async def delete_conversation(conversation_id: UUID, current_user: Annotated[
             await cur.execute("DELETE FROM conversations WHERE id = %s",
                               (conversation_id,))
             return {"message": "Conversation deleted"}
+
+
+# when sharing a conversation set its visibility to public,
+# so it can be shared to other users
+@router.post("/conversations/{conversation_id}/set_public")
+async def set_conversation_privacy_public(conversation_id: UUID,
+                                          current_user: Annotated[
+                                              Union[AuthenticatedUser],
+                                              Depends(get_current_user)
+                                          ]):
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            # update the value of privacy from 'private' to 'public'
+            await cur.execute("UPDATE conversations SET privacy = %s "
+                              "WHERE id = %s AND username = %s",
+                              ("public", conversation_id, current_user.username))
+
+            return {"Successfully changes privacy of conversation to public."}
