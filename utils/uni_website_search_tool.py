@@ -19,15 +19,8 @@ async def search_uni_website(query: str) -> str:
     search_links = await searxng_search(query)
     documents = await transform_data(search_links)
 
-    splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=50)
-    pipeline = IngestionPipeline(
-        transformations=[
-            splitter,
-        ],
-        documents=documents,
-    )
-    nodes = await pipeline.arun(show_progress=True)
-    nodes = nodes[:100]
+    # Get the first 10 documents
+    nodes = documents[:10]
 
     # Convert to NodeWithScore
     nodes = [NodeWithScore(node=node) for node in nodes]
