@@ -322,10 +322,10 @@ async def chat(
                                 case "search_uni_website":
                                     result = await uni_website_search_tool \
                                         .search_uni_website(**call["arguments"])
-                                case "search_society":
+                                case "society_queries":
                                     result = await society_scrape_tool \
                                         .search_society_tool(**call["arguments"])
-                                case "search_event":
+                                case "event_queries":
                                     result = await event_scrape_tool \
                                         .search_event_tool(**call["arguments"])
                                 case "get_timetable":
