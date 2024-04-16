@@ -13,7 +13,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from routes import authentication, deepgram_transcriber
 from routes import (chat, suggested_questions, text_to_speech,
-                    conversations, admin_analytics)
+                    conversations, admin_analytics, admin_chat)
 from utils import db
 
 OTEL_RESOURCE_ATTRIBUTES = {
@@ -59,6 +59,7 @@ app.include_router(suggested_questions.router)
 app.include_router(deepgram_transcriber.router)
 app.include_router(conversations.router)
 app.include_router(admin_analytics.router)
+app.include_router(admin_chat.router)
 
 
 @app.get("/")
