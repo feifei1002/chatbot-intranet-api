@@ -91,8 +91,7 @@ async def get_conversations(current_user: Annotated[
 
 
 # gets the conversation history for a given conversation ID
-@router.get("/conversations/{conversation_id}",
-            response_model=List[ConversationMessage])
+@router.get("/conversations/{conversation_id}")
 async def get_conversation_history(conversation_id: UUID,
                                    current_user: Annotated[
                                        Union[AuthenticatedUser],
@@ -123,7 +122,7 @@ async def get_conversation_history(conversation_id: UUID,
 
             # fetch the message content, role and order by conversation_history(idx)
             # and return a dict for converting to List[ConversationMessage]
-            await cur.execute("SELECT messages.content, messages.role "
+            await cur.execute("SELECT messages.content, messages.role, messages.id "
                               "FROM conversation_history "
                               "JOIN messages ON message_id = id "
                               "WHERE conversation_id = %s "
@@ -165,6 +164,9 @@ async def add_messages(messages: ChatHistory,
     # only generate a title when there are no values in conversation_history for the id
     generate_title = False
     username = current_user.username
+
+    ids = []
+
     # insert into conversation_history and messages
     async with pool.connection() as conn:
         async with conn.transaction():
@@ -214,6 +216,8 @@ async def add_messages(messages: ChatHistory,
                         " VALUES (%s, %s, %s)",
                         (conversation_id, message_id, next_idx,))
 
+                    ids.append(message_id)
+
     # if it's the first set of messages,
     # generate a title and update the value in conversations
     if generate_title:
@@ -228,7 +232,9 @@ async def add_messages(messages: ChatHistory,
                     "WHERE id = %s AND username = %s",
                     (conversation_title, conversation_id, current_user.username))
 
-    return {"message": "Inserted messages successfully"}
+    return {
+        "message_ids": ids
+    }
 
 
 # Delete the whole conversation from the database

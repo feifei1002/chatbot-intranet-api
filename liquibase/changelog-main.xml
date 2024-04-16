@@ -8,6 +8,6 @@
     <include file="version/1-learning-central-cache.xml" relativeToChangelogFile="true"/>
     <include file="version/2-create-conversations.xml" relativeToChangelogFile="true"/>
     <include file="version/3-admin-page.xml" relativeToChangelogFile="true"/>
-    <!-- ayman's branch .xml file goes here -->
+    <include file="version/4-feedback.xml" relativeToChangelogFile="true"/>
     <include file="version/5-share-conversations.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
