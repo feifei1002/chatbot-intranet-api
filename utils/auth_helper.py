@@ -21,6 +21,22 @@ async def login(credentials: UniCredentials):
 
         page = await context.new_page()
 
+        # Block Analytics and tracking scripts
+        block_list = ["hotjar", "googletagmanager", "clarity"]
+
+        # Block certain resources, to speed up the page load
+        async def route_intercept(route):
+            if route.request.resource_type in ["image", "font"]:
+                await route.abort()
+            else:
+                url = route.request.url
+                if any([block in url for block in block_list]):
+                    await route.abort()
+                else:
+                    await route.continue_()
+
+        await context.route("**/*", route_intercept)
+
         # Go to the intranet page, as it will redirect to the login page
         await page.goto("https://intranet.cardiff.ac.uk/students")
 
