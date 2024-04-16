@@ -287,6 +287,7 @@ async def chat(
                 function_call_content = json.dumps(function_calls_list)
 
         with chat_tracer.start_span("chat_response") as resp_span:
+            resp_span.set_attribute("authenticated", current_user is not None)
             completion_count = 0
             tool_calls = 0
             tools_called = []
