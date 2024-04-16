@@ -1,6 +1,7 @@
 import json
 import os
 
+from psycopg.rows import dict_row
 from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 
@@ -26,16 +27,31 @@ __allowed_roles = ["user", "assistant"]
 
 # Create a prompt for Claude to answer the question
 async def ask_claude(question, query_results):
-    prompt = f"""You are an AI assistant that helps
-    the admins of Cardiff University's chatbot to get analytics
-    on user engagement and bot performance.
-    Provide analytics based on the following query results:
-    <results>
-    {query_results}
-    </results>
-    Analytics question: <analytic>Question: {question}</analytic>
-    Please provide the analytics in a numbered list format
-    """
+    xml_prompt = "<conversations>"
+
+    cur_id = None
+
+    for result in query_results:
+        if result["id"] != cur_id:
+            cur_id = result["id"]
+            xml_prompt += "<conversation>" if cur_id is None \
+                else "</conversation><conversation>"
+
+        xml_prompt += f"<message><role>{result['role']}</role><content>{result['content']}</content></message>"  # noqa
+
+    if cur_id is not None:
+        xml_prompt += "</conversation>"
+
+    xml_prompt += "</conversations>"
+
+    print(xml_prompt)
+
+    prompt = "Given the following user conversations, help me answer the following question below."  # noqa
+    prompt += "\n\n" + xml_prompt
+
+    prompt += "\n"
+    prompt += f"<question>{question}</question>"
+
     return prompt
 
 
@@ -48,10 +64,9 @@ async def admin_chat(question: Question,
         if message.role not in __allowed_roles:
             raise ValueError(f"Role {message.role} is not allowed")
         messages.append(message.dict())
-    messages.append({"role": "user", "content": question.question})
 
     async with pool.connection() as conn:
-        async with conn.cursor() as cur:
+        async with conn.cursor(row_factory=dict_row) as cur:
             await cur.execute("SELECT 1 FROM admins WHERE username = %s",
                               (admin.username,))
             # Check if the user is an admin
@@ -66,7 +81,7 @@ async def admin_chat(question: Question,
             # Get the data needed from the database
             await cur.execute(
                 """
-                SELECT conversations.id, conversation_history.idx, messages.content
+                SELECT conversations.id, messages.content, messages.role
                 FROM conversations
                 JOIN conversation_history
                 ON conversations.id = conversation_history.conversation_id
@@ -74,10 +89,15 @@ async def admin_chat(question: Question,
                 ORDER BY conversations.id, conversation_history.idx
                 """
             )
-            schema = await cur.fetchall()
+            results = await cur.fetchall()
 
-            # Pass the schema to Claude and ask Claude to answer the question
-            prompt = await ask_claude(question, schema)
+            # Pass results and question to create a user prompt
+            user_prompt = await ask_claude(question.question, results)
+
+            messages.append({"role": "user", "content": user_prompt})
+
+            prompt = "You are an AI assistant that helps the admins of Cardiff University's chatbot to get analytics on user engagement and bot performance."  # noqa
+            "\nPlease provide the analytics in a numbered list format."
 
             # Get the response from Claude and stream it
             async def event_stream():
