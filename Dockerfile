@@ -9,6 +9,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 RUN --mount=type=cache,target=/var/cache/apt \
     playwright install chromium && \
+    playwright install-deps && \
     rm -rf /var/lib/apt/lists/*
 
 COPY . .
