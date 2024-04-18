@@ -37,9 +37,9 @@ async def get_text(link: str) -> Union[Document, None]:
     :param link: the link to get the text from
     :return: the markdown text from the link
     """
-    resp = await client.get(link)
-    if resp.status_code == 200:
-        try:
+    try:
+        resp = await client.get(link)
+        if resp.status_code == 200:
             doc = BeautifulSoup(resp.text, "html.parser")
 
             # Remove unwanted elements
@@ -70,9 +70,9 @@ async def get_text(link: str) -> Union[Document, None]:
                     "Source": link
                 }
             )
-        except Exception as e:
-            print("Error while parsing the document:", e)
-            return None
+    except Exception as e:
+        print("Error while parsing the document:", link, e)
+        return None
 
 
 async def transform_data(links):
