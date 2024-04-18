@@ -219,7 +219,7 @@ async def extract_learning_central_stream_entries(
             providers[sp_provider] = provider
 
         # We need to wait, else we don't get all the data
-        await sleep(0.5)
+        await sleep(1.5)
 
         # Send the request to get the stream entries
         response = await client.post(
