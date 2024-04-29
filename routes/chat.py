@@ -37,15 +37,22 @@ async def chat(
             Depends(get_current_user_optional)
         ]
 ):
-    tools = ["Intranet Search", "Search University Website", "Search Socities", "Search Events"]  # noqa
+    sys_tools = [
+        "The Intranet search tools is for searching information related to student life, university services, software, and more.", # noqa
+        "The University Website search tool is for searching information on the Cardiff University website like courses, departments, and more.", # noqa
+        "The Societies tool is for searching information about Cardiff University's societies.",  # noqa
+        "The Events tool is for searching information about the events happening at societies, clubs, and more."  # noqa
+    ]
 
-    authenticated_tools = [
-        "Get Timetable",
-        "Get Learning Central Stream"
+    sys_auth_tools = [
+        "The Timetable tool is for getting the user's timetable for finding where lectures, workshops, practicals, and more are.", # noqa
+        "The Learning Central tool is for getting the user's learning central stream for information on course/module assignments, content, announcements, and grades." # noqa
     ]
 
     if current_user:
-        tools.extend(authenticated_tools)
+        sys_tools.extend(sys_auth_tools)
+
+    newline = "\n"
 
     messages = [
         {
@@ -53,7 +60,7 @@ async def chat(
             "content": "You're an assistant that helps university students at Cardiff University."  # noqa
                        " You can help me by answering my questions."
                        " You can also ask me questions."
-                       f"\nYou can use the following tools when a user asks a query: {', '.join(tools)}"  # noqa
+                       f"\nYou can use the following tools when a user asks a query:\n{newline.join(sys_tools)}\n\n"  # noqa
                        "\nYou must use the responses from the tool to answer the student's query."  # noqa
                        "\nWhen the user is asking a follow-up question, you need to use the previous messages to form the context of the new question for tools."  # noqa
                        f"\nCurrent Date: {date.today()}"
