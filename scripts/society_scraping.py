@@ -21,20 +21,30 @@ class SocietyModel(BaseModel):
 
 
 async def scrape_links():
+    indexes = [
+        "https://www.cardiffstudents.com/activities/societies/",
+        "https://www.cardiffstudents.com/activities/au/"
+    ]
+
+    ret_links = []
+
     async with httpx.AsyncClient() as client:
-        response = await client.get("https://www.cardiffstudents.com/activities/societies/")
-        soup = BeautifulSoup(response.text, 'html.parser')
+        for index in indexes:
+            response = await client.get(index)
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Find links using the specified CSS selector
-        links = soup.select("li[data-msl-organisation-id] > a.msl-gl-link")
+            # Find links using the specified CSS selector
+            links = soup.select("li[data-msl-organisation-id] > a.msl-gl-link")
 
-        # Extract href attributes from the links
-        href_links = [link['href'] for link in links]
+            # Extract href attributes from the links
+            href_links = [link['href'] for link in links]
 
-        # Construct absolute URLs
-        abs_links = [f"https://www.cardiffstudents.com{href}" for href in href_links]
+            # Construct absolute URLs
+            abs_links = [f"https://www.cardiffstudents.com{href}" for href in href_links]
 
-        return abs_links
+            ret_links.extend(abs_links)
+
+    return ret_links
 
 
 async def scrape_content(url):
