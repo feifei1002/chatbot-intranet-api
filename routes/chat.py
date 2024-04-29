@@ -116,7 +116,7 @@ async def chat(
         {
             "type": "function",
             "function": {
-                "name": "society_queries",
+                "name": "search_society",
                 "description": "Search information about Cardiff Univeristy Societies, to help answer the user's query",  # noqa
                 "parameters": {
                     "type": "object",
@@ -134,10 +134,9 @@ async def chat(
         {
             "type": "function",
             "function": {
-                "name": "event_queries",
+                "name": "search_events",
                 "description": "Search information about Cardiff Univeristy Events, "
                                "to help answer the user's query",
-                # noqa
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -145,7 +144,6 @@ async def chat(
                             "type": "string",
                             "description": "The question to search for about the "
                                            "events on the Student Union Website",
-                            # noqa
                         }
                     },
                     "required": ["query"],
@@ -323,10 +321,10 @@ async def chat(
                                 case "search_uni_website":
                                     result = await uni_website_search_tool \
                                         .search_uni_website(**call["arguments"])
-                                case "society_queries":
+                                case "search_society":
                                     result = await society_scrape_tool \
                                         .search_society_tool(**call["arguments"])
-                                case "event_queries":
+                                case "search_events":
                                     result = await event_scrape_tool \
                                         .search_event_tool(**call["arguments"])
                                 case "get_timetable":
