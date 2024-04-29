@@ -93,7 +93,6 @@ async def main():
 
     # OpenAI Model works but needs a little tweaking
     embed_model = OpenAIEmbedding(model="text-embedding-3-large")
-    splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=20)
     embed_model.embed_batch_size = 50
 
     aclient = AsyncQdrantClient(
@@ -106,7 +105,7 @@ async def main():
 
     # Define ingestion pipeline
     pipeline = IngestionPipeline(
-        transformations=[splitter, embed_model],
+        transformations=[embed_model],
         vector_store=store
     )
 
