@@ -40,7 +40,7 @@ async def get_learning_central_cookies(cookies_dict: dict) -> list[dict]:
         # Set the cookies
         await context.add_cookies(cookies)
 
-        block_list = ["timetable", "eesysoft", "aptrinsic", "bluera", "newrelic"]
+        block_list = ["timetable", "eesysoft", "aptrinsic", "bluera", "newrelic", "launchPlacement"]
 
         # Block certain resources, to speed up the page load
         async def route_intercept(route):
